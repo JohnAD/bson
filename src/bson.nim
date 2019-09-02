@@ -49,7 +49,7 @@
 ##     doc["siblings"] = newBsonArray()
 ##     doc["siblings"].add "Amy"
 ##     doc["siblings"].add "Jerry"
-##     doc["schedule"] = newBsonObject()
+##     doc["schedule"] = newBsonDocument()
 ##     doc["schedule"]["8am"] = "go to work"
 ##     doc["schedule"]["11am"] = "see dentist"
 ##
@@ -236,13 +236,56 @@ type
 proc raiseWrongNodeException(bs: Bson) =
   raise newException(Exception, "Wrong node kind: " & $ord(bs.kind))
 
+proc `$`*(bs: Bson): string
+
+# #############################
+#
+# handlers for each basic TYPE
+#
+# #############################
+
+#
+# Oid
+#
+
+const allZeroesOid = Oid()  # creating a "zero" blank
+
 proc toBson*(x: Oid): Bson =
   ## Convert Mongo Object Id to Bson object
+  ##
+  ## If the Oid is all-zeroes ("000000000000000000000000"), then
+  ## a null field is stored rather than an ObjectID value
+  if $x == $allZeroesOid:
+    return Bson(kind: BsonKindNull)
   return Bson(kind: BsonKindOid, valueOid: x)
 
 converter toOid*(x: Bson): Oid =
   ## Convert Bson to Mongo Object ID
-  return x.valueOid
+  ##
+  ## if x is a null, then the all-zeroes Oid is returned
+  ## if x is a real Oid, then that value is returned
+  ## otherwise and attempt is made to parse the string equivalent into an Oid
+  case x.kind:
+  of BsonKindNull:
+    result = allZeroesOid
+  of BsonKindOid:
+    result = x.valueOid
+  else:
+    result = parseOid($x)
+
+proc `[]=`*(bs: Bson, key: string, value: Oid) =
+  ## Modify Bson document field with an explicit Oid value
+  ##
+  ## If the Oid is all-zeroes ("000000000000000000000000"), then
+  ## a null field is stored rather than an ObjectID value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# float
+#
 
 proc toBson*(x: float64): Bson =
   ## Convert float64 to Bson object
@@ -251,6 +294,17 @@ proc toBson*(x: float64): Bson =
 converter toFloat64*(x: Bson): float64 =
   ## Convert Bson object to float64
   return x.valueFloat64
+
+proc `[]=`*(bs: Bson, key: string, value: float64) =
+  ## Modify Bson document field with an explicit float64 value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# string
+#
 
 proc toBson*(x: string): Bson =
   ## Convert string to Bson object
@@ -262,7 +316,18 @@ converter toString*(x: Bson): string =
   of BsonKindStringUTF8:
       return x.valueString
   else:
-      raiseWrongNodeException(x)
+      return $x
+
+proc `[]=`*(bs: Bson, key: string, value: string) =
+  ## Modify Bson document field with an explicit string value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# int64
+#
 
 proc toBson*(x: int64): Bson =
   ## Convert int64 to Bson object
@@ -278,6 +343,17 @@ converter toInt64*(x: Bson): int64 =
   else:
       raiseWrongNodeException(x)
 
+proc `[]=`*(bs: Bson, key: string, value: int64) =
+  ## Modify Bson document field with an explicit int64 value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# int32
+#
+
 proc toBson*(x: int32): Bson =
   ## Convert int32 to Bson object
   return Bson(kind: BsonKindInt32, valueInt32: x)
@@ -291,6 +367,17 @@ converter toInt32*(x: Bson): int32 =
       return int32(x.valueInt32)
   else:
       raiseWrongNodeException(x)
+
+proc `[]=`*(bs: Bson, key: string, value: int32) =
+  ## Modify Bson document field with an explicit int32 value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# int (generic)
+#
 
 converter toInt*(x: Bson): int =
   ## Convert Bson to int whether it is int32 or int64
@@ -306,6 +393,17 @@ proc toBson*(x: int): Bson =
   ## Convert int to Bson object
   return Bson(kind: BsonKindInt64, valueInt64: x)
 
+proc `[]=`*(bs: Bson, key: string, value: int) =
+  ## Modify Bson document field with an explicit int value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# bool
+#
+
 proc toBson*(x: bool): Bson =
   ## Convert bool to Bson object
   return Bson(kind: BsonKindBool, valueBool: x)
@@ -314,6 +412,17 @@ converter toBool*(x: Bson): bool =
   ## Convert Bson object to bool
   return x.valueBool
 
+proc `[]=`*(bs: Bson, key: string, value: bool) =
+  ## Modify Bson document field with an explicit bool value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# Time
+#
+
 proc toBson*(x: Time): Bson =
   ## Convert Time to Bson object
   return Bson(kind: BsonKindTimeUTC, valueTime: x)
@@ -321,6 +430,17 @@ proc toBson*(x: Time): Bson =
 converter toTime*(x: Bson): Time =
   ## Convert Bson object to Time
   return x.valueTime
+
+proc `[]=`*(bs: Bson, key: string, value: Time) =
+  ## Modify Bson document field with an explicit Time value
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument[key] = toBson(value)
+  else:
+    raiseWrongNodeException(bs)
+
+#
+# others
+#
 
 proc toBson*(x: BsonTimestamp): Bson =
   ## Convert inner BsonTimestamp to Bson object
@@ -447,8 +567,6 @@ proc toBytes*(bs: Bson, res: var string) =
       discard
   else:
       raiseWrongNodeException(bs)
-
-proc `$`*(bs: Bson): string
 
 proc bytes*(bs: Bson): string =
   result = ""

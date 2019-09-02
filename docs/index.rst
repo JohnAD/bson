@@ -1,5 +1,6 @@
 Introduction to bson
 ==============================================================================
+ver 0.1.0
 
 BSON
 
@@ -52,7 +53,7 @@ documents (with `newBsonDocument`):
     doc["siblings"] = newBsonArray()
     doc["siblings"].add "Amy"
     doc["siblings"].add "Jerry"
-    doc["schedule"] = newBsonObject()
+    doc["schedule"] = newBsonDocument()
     doc["schedule"]["8am"] = "go to work"
     doc["schedule"]["11am"] = "see dentist"
 

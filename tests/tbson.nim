@@ -40,10 +40,23 @@ let expected_bdoc2 = """[
     2
 ]"""
 
+let expected_mdoc = """{
+    "name" : "Joe",
+    "age" : 42,
+    "siblings" : [
+        "Amy",
+        "Jerry"
+    ],
+    "schedule" : {
+        "8am" : "go to work",
+        "11am" : "see dentist"
+    }
+}"""
+
 suite "Basic BSON":
   test "nim-to-bson-to-binary and back":
     let oid = parseOid("5d6c66e4a0dc75753703ff48")
-    let bdoc: Bson = %*{
+    let bdoc: Bson = @@{
         "image": bin("12312l3jkalksjslkvdsdas"),
         "balance": 1000.23,
         "name": "John",
@@ -65,7 +78,7 @@ suite "Basic BSON":
             "salary": 500
         },
         "array": [
-            %*{"string": "hello"},
+            @@{"string": "hello"},
             %*{"string" : "world"}
         ]
     }
@@ -82,3 +95,15 @@ suite "Basic BSON":
     bdoc2 = bdoc2.add(2)
     
     check $bdoc2 == expected_bdoc2
+  test "building bson manually":
+    var mdoc = newBsonDocument()
+    mdoc["name"] = "Joe"
+    mdoc["age"] = 42
+    mdoc["siblings"] = newBsonArray()
+    mdoc["siblings"].add "Amy"
+    mdoc["siblings"].add "Jerry"
+    mdoc["schedule"] = newBsonDocument()
+    mdoc["schedule"]["8am"] = "go to work"
+    mdoc["schedule"]["11am"] = "see dentist"
+
+    check mdoc == expected_mdoc
