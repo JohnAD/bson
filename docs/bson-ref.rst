@@ -1107,7 +1107,7 @@ Macros and Templates
 B
 ---------------------------------------------------------
 
-.. code:: nim
+    .. code:: nim
 
     template B*(key: string, val: Bson): Bson =  ## Shortcut for `newBsonDocument`
 
@@ -1119,7 +1119,7 @@ B
 B
 ---------------------------------------------------------
 
-.. code:: nim
+    .. code:: nim
 
     template B*: untyped =
 
@@ -1131,7 +1131,7 @@ B
 B
 ---------------------------------------------------------
 
-.. code:: nim
+    .. code:: nim
 
     template B*[T](key: string, values: seq[T]): Bson =
 
@@ -1143,7 +1143,7 @@ B
 `%*`
 ---------------------------------------------------------
 
-.. code:: nim
+    .. code:: nim
 
     macro `%*`*(x: untyped): Bson =
 
@@ -1156,7 +1156,7 @@ B
 `@@`
 ---------------------------------------------------------
 
-.. code:: nim
+    .. code:: nim
 
     macro `@@`*(x: untyped): Bson =
 
@@ -1168,7 +1168,7 @@ B
 toBson
 ---------------------------------------------------------
 
-.. code:: nim
+    .. code:: nim
 
     template toBson*(b: Bson): Bson = b
 
