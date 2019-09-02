@@ -3,8 +3,8 @@ Introduction to bson
 
 BSON
 
-Nim library for supporting BSON, short for Binary JSON. A compact binary
-protocol similar to the JSON it is based on.
+This is a Nim library for supporting BSON. BSON is short for Binary JSON -- a
+compact binary protocol similar to the JSON it is based on.
 
 Most notably, MongoDB, a document-oriented database uses BSON for it's
 underlying storage, though there are other applications that use it as well.
@@ -18,7 +18,7 @@ More detail can also be found in the reference document linked at the bottom.
 CREATING A BSON DOCUMENT USING BRACKETS
 ---------------------------------------
 
-You can use a pair of '@@' symbols prefixing a pair of brackets with json-like
+You can use a pair of '@@' symbols prefixing a pair of curly braces with json-like
 data in between to create a quick an easy BSON document.
 
 For example:
@@ -90,10 +90,9 @@ Not all of them are fully supported by the libary yet.
 +--------------------------------+-----------------+---------------------------+
 | UTF-8 string                   | string          |                           |
 +--------------------------------+-----------------+---------------------------+
-| Embedded document              | newBsonDocument | from this library. for each  |
-|                                |                 | key/value pair, the value    |
-|                                |                 | can be any type, but the key |
-|                                |                 | must always be a string      |
+| Embedded document              | newBsonDocument | from this library. for    |
+|                                |                 | key/value pairs, the key  |
+|                                |                 | must always be a string   |
 +--------------------------------+-----------------+---------------------------+
 | Array                          | newBsonArray    | actually a list, not an   |
 |                                |                 | array. You can mix types. |
@@ -124,7 +123,7 @@ Not all of them are fully supported by the libary yet.
 +--------------------------------+-----------------+---------------------------+
 | 64-bit integer                 | int64           |                           |
 +--------------------------------+-----------------+---------------------------+
-| 128-bit decimal floating point |                 | would really like to support some day |
+| 128-bit decimal floating point |                 | would like to support !   |
 +--------------------------------+-----------------+---------------------------+
 | Min key                        |                 |                           |
 +--------------------------------+-----------------+---------------------------+
