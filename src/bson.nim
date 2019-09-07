@@ -116,7 +116,7 @@
 ## +--------------------------------+-----------------+---------------------------+
 ## | 32-bit integer                 | int32           |                           |
 ## +--------------------------------+-----------------+---------------------------+
-## | Timestamp                      | Time            |                           |
+## | Timestamp                      | BsonTimestamp   | from this library         |
 ## +--------------------------------+-----------------+---------------------------+
 ## | 64-bit integer                 | int64           |                           |
 ## +--------------------------------+-----------------+---------------------------+
@@ -233,10 +233,88 @@ type
 
   GeoPoint = array[0..1, float64]   ## Represents Mongo Geo Point
 
+
 proc raiseWrongNodeException(bs: Bson) =
   raise newException(Exception, "Wrong node kind: " & $ord(bs.kind))
 
-proc `$`*(bs: Bson): string
+
+proc `$`*(bs: Bson): string =
+  ## Serialize Bson document into readable string
+  proc stringify(bs: Bson, indent: string): string =
+      if bs.isNil: return "null"
+      case bs.kind
+      of BsonKindDouble:
+          return $bs.valueFloat64
+      of BsonKindStringUTF8:
+          return "\"" & bs.valueString & "\""
+      of BsonKindDocument:
+          var res = "{\n"
+          let ln = bs.valueDocument.len
+          var i = 0
+          let newIndent = indent & "    "
+          for k, v in bs.valueDocument:
+              res &= newIndent
+              res &= "\"" & k & "\" : "
+              res &= stringify(v, newIndent)
+              if i != ln - 1:
+                  res &= ","
+              inc i
+              res &= "\n"
+          res &= indent & "}"
+          return res
+      of BsonKindArray:
+          var res = "[\n"
+          let newIndent = indent & "    "
+          for i, v in bs.valueArray:
+              res &= newIndent
+              res &= stringify(v, newIndent)
+              if i != bs.valueArray.len - 1:
+                  res &= ","
+              res &= "\n"
+          res &= indent & "]"
+          return res
+      of BsonKindBinary:
+          case bs.subtype
+          of BsonSubtypeMd5:
+              return "{\"$$md5\": \"$#\"}" % [$bs.valueDigest]
+          of BsonSubtypeGeneric:
+              return "{\"$$bindata\": \"$#\"}" % [base64.encode(bs.valueGeneric)]
+          of BsonSubtypeUserDefined:
+              return "{\"$$bindata\": \"$#\"}" % [base64.encode(bs.valueUserDefined)]
+          else:
+              raiseWrongNodeException(bs)
+      of BsonKindUndefined:
+          return "undefined"
+      of BsonKindOid:
+          return "{\"$$oid\": \"$#\"}" % [$bs.valueOid]
+      of BsonKindBool:
+          return if bs.valueBool == true: "true" else: "false"
+      of BsonKindTimeUTC:
+          return $bs.valueTime
+      of BsonKindNull:
+          return "null"
+      of BsonKindRegexp:
+          return "{\"$$regex\": \"$#\", \"$$options\": \"$#\"}" % [bs.regex, bs.options]
+      of BsonKindDBPointer:
+          let
+            refcol = bs.refCol.split(".")[1]
+            refdb  = bs.refCol.split(".")[0]
+          return "{\"$$ref\": \"$#\", \"$$id\": \"$#\", \"$$db\": \"$#\"}" % [refcol, $bs.refOid, refdb]
+      of BsonKindJSCode:
+          return bs.valueCode ## TODO: make valid JSON here
+      of BsonKindInt32:
+          return $bs.valueInt32
+      of BsonKindTimestamp:
+          return "{\"$$timestamp\": $#}" % [$(cast[ptr int64](addr bs.valueTimestamp)[])]
+      of BSonKindInt64:
+          return $bs.valueInt64
+      of BsonKindMinimumKey:
+          return "{\"$$minkey\": 1}"
+      of BsonKindMaximumKey:
+          return "{\"$$maxkey\": 1}"
+      else:
+          raiseWrongNodeException(bs)
+  return stringify(bs, "")
 
 # #############################
 #
@@ -264,14 +342,20 @@ converter toOid*(x: Bson): Oid =
   ##
   ## if x is a null, then the all-zeroes Oid is returned
   ## if x is a real Oid, then that value is returned
-  ## otherwise and attempt is made to parse the string equivalent into an Oid
+  ## if x is a string, then an attempt is made to parse it to an Oid
+  ## otherwise, the all-zeroes Oid is returned
   case x.kind:
   of BsonKindNull:
     result = allZeroesOid
   of BsonKindOid:
     result = x.valueOid
+  of BsonKindStringUTF8:
+    try:
+      result = parseOid(x.valueString)
+    except:
+      result = allZeroesOid
   else:
-    result = parseOid($x)
+    result = allZeroesOid
 
 proc `[]=`*(bs: Bson, key: string, value: Oid) =
   ## Modify Bson document field with an explicit Oid value
@@ -461,6 +545,12 @@ proc toBson*(x: var MD5Context): Bson =
   x.md5Final(digest)
   return Bson(kind: BsonKindBinary, subtype: BsonSubtypeMd5, valueDigest: digest)
 
+# #############################
+#
+# convert to bytes handling
+#
+# #############################
+
 proc podValueToBytesAtOffset[T](x: T, res: var string, off: int) {.inline.} =
   assert(off + sizeof(x) <= res.len)
   copyMem(addr res[off], unsafeAddr x, sizeof(x))
@@ -470,30 +560,30 @@ proc podValueToBytes[T](x: T, res: var string) {.inline.} =
   res.setLen(off + sizeof(x))
   podValueToBytesAtOffset(x, res, off)
 
-proc int32ToBytesAtOffset*(x: int32, res: var string, off: int) =
+proc int32ToBytesAtOffset(x: int32, res: var string, off: int) =
   podValueToBytesAtOffset(x, res, off)
 
-proc int32ToBytes*(x: int32, res: var string) {.inline.} =
+proc int32ToBytes(x: int32, res: var string) {.inline.} =
   ## Convert int32 data piece into series of bytes
   podValueToBytes(x, res)
 
-proc float64ToBytes*(x: float64, res: var string) {.inline.} =
+proc float64ToBytes(x: float64, res: var string) {.inline.} =
   ## Convert float64 data piece into series of bytes
   podValueToBytes(x, res)
 
-proc int64ToBytes*(x: int64, res: var string) {.inline.} =
+proc int64ToBytes(x: int64, res: var string) {.inline.} =
   ## Convert int64 data piece into series of bytes
   podValueToBytes(x, res)
 
-proc boolToBytes*(x: bool, res: var string) {.inline.} =
+proc boolToBytes(x: bool, res: var string) {.inline.} =
   ## Convert bool data piece into series of bytes
   podValueToBytes(if x: 1'u8 else: 0'u8, res)
 
-proc oidToBytes*(x: Oid, res: var string) {.inline.} =
+proc oidToBytes(x: Oid, res: var string) {.inline.} =
   ## Convert Mongo Object ID data piece into series to bytes
   podValueToBytes(x, res)
 
-proc toBytes*(bs: Bson, res: var string) =
+proc toBytes(bs: Bson, res: var string) =
   ## Serialize Bson object into byte-stream
   case bs.kind
   of BsonKindDouble:
@@ -569,91 +659,17 @@ proc toBytes*(bs: Bson, res: var string) =
       raiseWrongNodeException(bs)
 
 proc bytes*(bs: Bson): string =
+  ## Serialize Bson document into a raw byte-stream
+  ##
+  ## Returns a binary string (not generally printable)
   result = ""
   bs.toBytes(result)
 
-proc `$`*(bs: Bson): string =
-  ## Serialize Bson document into readable string
-  proc stringify(bs: Bson, indent: string): string =
-      if bs.isNil: return "null"
-      case bs.kind
-      of BsonKindDouble:
-          return $bs.valueFloat64
-      of BsonKindStringUTF8:
-          return "\"" & bs.valueString & "\""
-      of BsonKindDocument:
-          var res = "{\n"
-          let ln = bs.valueDocument.len
-          var i = 0
-          let newIndent = indent & "    "
-          for k, v in bs.valueDocument:
-              res &= newIndent
-              res &= "\"" & k & "\" : "
-              res &= stringify(v, newIndent)
-              if i != ln - 1:
-                  res &= ","
-              inc i
-              res &= "\n"
-          res &= indent & "}"
-          return res
-      of BsonKindArray:
-          var res = "[\n"
-          let newIndent = indent & "    "
-          for i, v in bs.valueArray:
-              res &= newIndent
-              res &= stringify(v, newIndent)
-              if i != bs.valueArray.len - 1:
-                  res &= ","
-              res &= "\n"
-          res &= indent & "]"
-          return res
-      of BsonKindBinary:
-          case bs.subtype
-          of BsonSubtypeMd5:
-              return "{\"$$md5\": \"$#\"}" % [$bs.valueDigest]
-          of BsonSubtypeGeneric:
-              return "{\"$$bindata\": \"$#\"}" % [base64.encode(bs.valueGeneric)]
-          of BsonSubtypeUserDefined:
-              return "{\"$$bindata\": \"$#\"}" % [base64.encode(bs.valueUserDefined)]
-          else:
-              raiseWrongNodeException(bs)
-      of BsonKindUndefined:
-          return "undefined"
-      of BsonKindOid:
-          return "{\"$$oid\": \"$#\"}" % [$bs.valueOid]
-      of BsonKindBool:
-          return if bs.valueBool == true: "true" else: "false"
-      of BsonKindTimeUTC:
-          return $bs.valueTime
-      of BsonKindNull:
-          return "null"
-      of BsonKindRegexp:
-          return "{\"$$regex\": \"$#\", \"$$options\": \"$#\"}" % [bs.regex, bs.options]
-      of BsonKindDBPointer:
-          let
-            refcol = bs.refCol.split(".")[1]
-            refdb  = bs.refCol.split(".")[0]
-          return "{\"$$ref\": \"$#\", \"$$id\": \"$#\", \"$$db\": \"$#\"}" % [refcol, $bs.refOid, refdb]
-      of BsonKindJSCode:
-          return bs.valueCode ## TODO: make valid JSON here
-      of BsonKindInt32:
-          return $bs.valueInt32
-      of BsonKindTimestamp:
-          return "{\"$$timestamp\": $#}" % [$(cast[ptr int64](addr bs.valueTimestamp)[])]
-      of BSonKindInt64:
-          return $bs.valueInt64
-      of BsonKindMinimumKey:
-          return "{\"$$minkey\": 1}"
-      of BsonKindMaximumKey:
-          return "{\"$$maxkey\": 1}"
-      else:
-          raiseWrongNodeException(bs)
-  return stringify(bs, "")
-
-proc initBsonDocument*(): Bson {.deprecated.}=
-  ## Create new top-level Bson document
-  result = Bson(kind: BsonKindDocument,
-                valueDocument: initOrderedTable[string, Bson]())
+# ##################################
+#
+# Creating/Setting BSON objects
+#
+# ##################################
 
 proc newBsonDocument*(): Bson =
   ## Create new empty Bson document
@@ -667,12 +683,8 @@ proc newBsonArray*(): Bson =
       valueArray: newSeq[Bson]()
   )
 
-proc initBsonArray*(): Bson {.deprecated.} =
-  ## Create new Bson array
-  return newBsonArray()
-
-template B*: untyped =
-  newBsonDocument()
+# template B*: untyped =
+#   newBsonDocument()
 
 proc `[]`*(bs: Bson, key: string): Bson =
   ## Get Bson document field
@@ -743,19 +755,26 @@ macro `%*`*(x: untyped): Bson =
 macro `@@`*(x: untyped): Bson =
   result = toBson(x)
 
-template B*(key: string, val: Bson): Bson =  ## Shortcut for `newBsonDocument`
-  let b = newBsonDocument()
-  b[key] = val
-  b
+# template B*(key: string, val: Bson): Bson =  ## Shortcut for `newBsonDocument`
+#   let b = newBsonDocument()
+#   b[key] = val
+#   b
 
-template B*[T](key: string, values: seq[T]): Bson =
-  let b = newBsonDocument()
-  b[key] = values
-  b
-
-proc dbref*(refcol: string, refoid: Oid): Bson =
-  ## Create new DBRef (database reference) MongoDB bson type
-  return Bson(kind: BsonKindDBPointer, refcol: refcol, refoid: refoid)
+# template B*[T](key: string, values: seq[T]): Bson =
+#   let b = newBsonDocument()
+#   b[key] = values
+#   b
+proc dbref*(refCollection: string, refOid: Oid): Bson =
+  ## Create a new DBRef (database reference) MongoDB bson type
+  ##
+  ## refCollection
+  ##   the name of the collection being referenced
+  ##
+  ## refOid
+  ##   the ``_id`` of the document sitting in the collection
+  ##
+  ## Returns a BSON object
+  return Bson(kind: BsonKindDBPointer, refcol: refCollection, refoid: refOid)
 
 proc undefined*(): Bson =
   ## Create new Bson 'undefined' value
@@ -900,7 +919,7 @@ proc readStr(s: Stream, length: int, result: var string) =
     if L != length: setLen(result, L)
 
 proc newBsonDocument*(s: Stream): Bson =
-  ## Create new Bson document from byte stream
+  ## Create new Bson document from a byte stream
   var buf = ""
   discard s.readInt32()   ## docSize
   result = newBsonDocument()
@@ -997,45 +1016,72 @@ proc newBsonDocument*(s: Stream): Bson =
       else:
           raise newException(Exception, "Unexpected kind: " & $kind)
 
-proc initBsonDocument*(stream: Stream): Bson {.deprecated.} =
-  return newBsonDocument(stream)
-
-proc initBsonDocument*(bytes: string): Bson {.deprecated.} =
-  ## Create new Bson document from byte string
-  newBsonDocument(newStringStream(bytes))
-
 proc newBsonDocument*(bytes: string): Bson =
   ## Create new Bson document from byte string
   newBsonDocument(newStringStream(bytes))
 
 proc merge*(a, b: Bson): Bson =
+  ## Combine two BSON documents into a new one.
+  ##
+  ## The resulting document contains all the fields of both.
+  ## If both ``a`` and ``b`` contain the same field, the
+  ## value in ``b`` is used.
+  ##
+  ## For example:
+  ##
+  ##
+  ## .. code:: nim
+  ##
+  ##     let a = @@{"name": "Joe", "age": 42, weight: 50 }
+  ##     let b = @@{"name": "Joe", "feet": 2, weight: 52 }
+  ##     let both = a.merge(b)
+  ##     echo $both
+  ##
+  ## displays     
+  ##
+  ## .. code:: json
+  ##
+  ##     {
+  ##         "name" : "Joe",
+  ##         "age" : 42,
+  ##         "weight" : 52,
+  ##         "feet" : 2
+  ##     }
+  ##
+  ## Returns the combined BSON document.
 
-  proc m_rec(a,b,r: Bson)=
-      for k, v in a:
-          if not b[k].isNil:
-              r[k] = v.merge(b[k])
-          else:
-              r[k] = v
+  proc m_rec(a, b, r: Bson)=
+    for k, v in a:
+      if not b[k].isNil:
+        r[k] = v.merge(b[k])
+      else:
+        r[k] = v
 
-      for k, v in b:
-          if a[k].isNil:
-              r[k] = v
+    for k, v in b:
+      if a[k].isNil:
+        r[k] = v
 
   if (a.kind == BsonKindDocument or a.kind == BsonKindArray) and
-      (b.kind == BsonKindDocument or b.kind == BsonKindArray):
-      result = newBsonDocument()
-      m_rec(a,b,result)
+     (b.kind == BsonKindDocument or b.kind == BsonKindArray):
+    result = newBsonDocument()
+    m_rec(a, b, result)
   else:
-      result = a
+      result = b
 
 proc update*(a, b: Bson)=
+  ## Modifies the content of document ``a`` with the updated content of document ``b``.
+  ##
+  ## If ``a`` and ``b`` contain the same field, the value in ``b`` is set
+  ## in ``a``.
+  ##
+  ## Works with both documents and arrays. With anything else, nothing happens.
   if (a.kind == BsonKindDocument or a.kind == BsonKindArray) and
-      (b.kind == BsonKindDocument or b.kind == BsonKindArray):
+     (b.kind == BsonKindDocument or b.kind == BsonKindArray):
 
-      for k, v in a:
-          if not b[k].isNil:
-              a[k] = v.merge(b[k])
+    for k, v in a:
+        if not b[k].isNil:
+            a[k] = v.merge(b[k])
 
-      for k, v in b:
-          if a[k].isNil:
-              a[k] = v
+    for k, v in b:
+        if a[k].isNil:
+            a[k] = v

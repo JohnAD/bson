@@ -107,3 +107,20 @@ suite "Basic BSON":
     mdoc["schedule"]["11am"] = "see dentist"
 
     check mdoc == expected_mdoc
+
+  test "merge and update":
+    const expected_out = """{
+    "name" : "Joe",
+    "age" : 42,
+    "weight" : 52,
+    "feet" : 2
+}"""
+    let a = @@{"name": "Joe", "age": 42, "weight": 50 }
+    let b = @@{"name": "Joe", "feet": 2, "weight": 52 }
+    let both = a.merge(b)
+    
+    check $both == expected_out
+
+    update(a, b)
+
+    check $a == expected_out
