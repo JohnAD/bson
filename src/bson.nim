@@ -596,6 +596,8 @@ proc toBytes(bs: Bson, res: var string) =
       let off = res.len
       res.setLen(off + sizeof(int32)) # We shall write the length in here...
       for key, val in bs.valueDocument:
+          if val.isNil:
+            raise newException(ValueError, "Value assigned to key $1 is nil.".format(key))
           res &= val.kind
           res &= key
           res &= char(0)
