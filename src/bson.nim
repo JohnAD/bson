@@ -337,7 +337,7 @@ proc `$`*(bs: Bson): string =
 
 const
   allZeroesOid* = Oid()
-    ## A "blank" Oid represented by all-zeroes
+    # A "blank" Oid represented by all-zeroes
 
 
 proc toBson*(x: Oid): Bson =
