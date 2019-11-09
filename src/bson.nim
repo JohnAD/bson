@@ -24,10 +24,6 @@
 ##
 ##     var doc = @@{"name": "Joe", "age": 42, "siblings": ["Amy", "Jerry"]}
 ##
-## For legacy reasons, you can also use the `%*` to do the same thing. However,
-## because JSON uses `*%`, this can make for confusing-to-read code if you
-## end up mixing JSON and BSON in the same code.
-##
 ## CREATING A BSON DOCUMENT MANUALLY
 ## ---------------------------------
 ##
@@ -127,6 +123,16 @@
 ## | Max key                        |                 |                           |
 ## +--------------------------------+-----------------+---------------------------+
 ##
+## Credit
+## ======
+##
+## Large portions of this code were pulled from the nimongo project, a scalable
+## pure-nim mongodb driver. See `https://github.com/SSPkrolik/nimongo`__
+##
+## However, this library is NOT compatilible with nimongo, as nimongo relies on an
+## internal implementation of BSON.
+
+
 
 import algorithm
 import base64
@@ -316,17 +322,23 @@ proc `$`*(bs: Bson): string =
           raiseWrongNodeException(bs)
   return stringify(bs, "")
 
+
 # #############################
 #
 # handlers for each basic TYPE
 #
 # #############################
 
+
 #
 # Oid
 #
 
-const allZeroesOid = Oid()  # creating a "zero" blank
+
+const
+  allZeroesOid* = Oid()
+    ## A "blank" Oid represented by all-zeroes
+
 
 proc toBson*(x: Oid): Bson =
   ## Convert Mongo Object Id to Bson object
@@ -336,6 +348,7 @@ proc toBson*(x: Oid): Bson =
   if $x == $allZeroesOid:
     return Bson(kind: BsonKindNull)
   return Bson(kind: BsonKindOid, valueOid: x)
+
 
 converter toOid*(x: Bson): Oid =
   ## Convert Bson to Mongo Object ID
@@ -750,9 +763,6 @@ proc toBson(x: NimNode): NimNode {.compileTime.} =
   else:
     result = newCall("toBson", x)
 
-macro `%*`*(x: untyped): Bson =
-  ## Perform dict-like structure conversion into bson
-  result = toBson(x)
 
 macro `@@`*(x: untyped): Bson =
   result = toBson(x)

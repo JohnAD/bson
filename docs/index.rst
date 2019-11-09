@@ -1,6 +1,6 @@
 Introduction to bson
 ==============================================================================
-ver 0.1.0
+ver 1.0.0
 
 BSON
 
@@ -27,10 +27,6 @@ For example:
 .. code:: nim
 
     var doc = @@{"name": "Joe", "age": 42, "siblings": ["Amy", "Jerry"]}
-
-For legacy reasons, you can also use the `%*` to do the same thing. However,
-because JSON uses `*%`, this can make for confusing-to-read code if you
-end up mixing JSON and BSON in the same code.
 
 CREATING A BSON DOCUMENT MANUALLY
 ---------------------------------
@@ -131,13 +127,22 @@ Not all of them are fully supported by the libary yet.
 | Max key                        |                 |                           |
 +--------------------------------+-----------------+---------------------------+
 
+Credit
+======
+
+Large portions of this code were pulled from the nimongo project, a scalable
+pure-nim mongodb driver. See `https://github.com/SSPkrolik/nimongo`__
+
+However, this library is NOT compatilible with nimongo, as nimongo relies on an
+internal implementation of BSON.
+A "blank" Oid represented by all-zeroes
 
 
 
 Table Of Contents
 =================
 
-1. `Introduction to bson <index.rst>`__
+1. `Introduction to bson <https://github.com/JohnAD/bson>`__
 2. Appendices
 
     A. `bson Reference <bson-ref.rst>`__

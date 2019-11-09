@@ -74,12 +74,12 @@ suite "Basic BSON":
         "userDefined": binuser("some-binary-data"),
         "someTimestamp": BsonTimestamp(increment: 1, timestamp: 1),
         "utcTime": parseTime("2019-09-01T19:48:36", "yyyy-MM-dd\'T\'HH:mm:ss", utc()),
-        "subdoc": %*{
+        "subdoc": @@{
             "salary": 500
         },
         "array": [
             @@{"string": "hello"},
-            %*{"string" : "world"}
+            @@{"string" : "world"}
         ]
     }
 

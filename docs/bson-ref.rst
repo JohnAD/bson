@@ -41,7 +41,7 @@ Bson
           else:                        discard
 
 
-    source line: `197 <../src/bson.nim#L197>`__
+    source line: `203 <../src/bson.nim#L203>`__
 
 
 
@@ -56,7 +56,7 @@ BsonTimestamp
           timestamp*: int32
 
 
-    source line: `193 <../src/bson.nim#L193>`__
+    source line: `199 <../src/bson.nim#L199>`__
 
 
 
@@ -76,7 +76,7 @@ Procs, Methods, Iterators
 
         proc `$`*(bs: Bson): string =
 
-    source line: `241 <../src/bson.nim#L241>`__
+    source line: `247 <../src/bson.nim#L247>`__
 
     Serialize Bson document into readable string
 
@@ -89,7 +89,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: int, value: Bson) =
 
-    source line: `712 <../src/bson.nim#L712>`__
+    source line: `725 <../src/bson.nim#L725>`__
 
     Modify Bson array element
 
@@ -102,7 +102,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: Bson) =
 
-    source line: `698 <../src/bson.nim#L698>`__
+    source line: `711 <../src/bson.nim#L711>`__
 
     Modify Bson document field
 
@@ -115,7 +115,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: Oid) =
 
-    source line: `360 <../src/bson.nim#L360>`__
+    source line: `373 <../src/bson.nim#L373>`__
 
     Modify Bson document field with an explicit Oid value
     
@@ -131,7 +131,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: Time) =
 
-    source line: `518 <../src/bson.nim#L518>`__
+    source line: `531 <../src/bson.nim#L531>`__
 
     Modify Bson document field with an explicit Time value
 
@@ -144,7 +144,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: bool) =
 
-    source line: `499 <../src/bson.nim#L499>`__
+    source line: `512 <../src/bson.nim#L512>`__
 
     Modify Bson document field with an explicit bool value
 
@@ -157,7 +157,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: float64) =
 
-    source line: `382 <../src/bson.nim#L382>`__
+    source line: `395 <../src/bson.nim#L395>`__
 
     Modify Bson document field with an explicit float64 value
 
@@ -170,7 +170,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: int) =
 
-    source line: `480 <../src/bson.nim#L480>`__
+    source line: `493 <../src/bson.nim#L493>`__
 
     Modify Bson document field with an explicit int value
 
@@ -183,7 +183,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: int32) =
 
-    source line: `455 <../src/bson.nim#L455>`__
+    source line: `468 <../src/bson.nim#L468>`__
 
     Modify Bson document field with an explicit int32 value
 
@@ -196,7 +196,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: int64) =
 
-    source line: `430 <../src/bson.nim#L430>`__
+    source line: `443 <../src/bson.nim#L443>`__
 
     Modify Bson document field with an explicit int64 value
 
@@ -209,7 +209,7 @@ Procs, Methods, Iterators
 
         proc `[]=`*(bs: Bson, key: string, value: string) =
 
-    source line: `405 <../src/bson.nim#L405>`__
+    source line: `418 <../src/bson.nim#L418>`__
 
     Modify Bson document field with an explicit string value
 
@@ -222,7 +222,7 @@ Procs, Methods, Iterators
 
         proc `[]`*(bs: Bson, key: int): Bson =
 
-    source line: `705 <../src/bson.nim#L705>`__
+    source line: `718 <../src/bson.nim#L718>`__
 
     Get Bson array item by index
 
@@ -235,7 +235,7 @@ Procs, Methods, Iterators
 
         proc `[]`*(bs: Bson, key: string): Bson =
 
-    source line: `691 <../src/bson.nim#L691>`__
+    source line: `704 <../src/bson.nim#L704>`__
 
     Get Bson document field
 
@@ -248,7 +248,7 @@ Procs, Methods, Iterators
 
         proc `{}=`*(bs: Bson, keys: varargs[string], value: Bson) =
 
-    source line: `887 <../src/bson.nim#L887>`__
+    source line: `897 <../src/bson.nim#L897>`__
 
 
 
@@ -260,7 +260,7 @@ Procs, Methods, Iterators
 
         proc `{}`*(bs: Bson, keys: varargs[string]): Bson =
 
-    source line: `877 <../src/bson.nim#L877>`__
+    source line: `887 <../src/bson.nim#L887>`__
 
 
 
@@ -272,7 +272,7 @@ add
 
         proc add*[T](bs: Bson, value: T): Bson {.discardable.} =
 
-    source line: `855 <../src/bson.nim#L855>`__
+    source line: `865 <../src/bson.nim#L865>`__
 
 
 
@@ -284,7 +284,7 @@ bin
 
         proc bin*(bindata: string): Bson =
 
-    source line: `805 <../src/bson.nim#L805>`__
+    source line: `815 <../src/bson.nim#L815>`__
 
     Create new binary Bson object with 'generic' subtype
 
@@ -297,7 +297,7 @@ binstr
 
         proc binstr*(x: Bson): string =
 
-    source line: `813 <../src/bson.nim#L813>`__
+    source line: `823 <../src/bson.nim#L823>`__
 
 
 
@@ -309,7 +309,7 @@ binuser
 
         proc binuser*(bindata: string): Bson =
 
-    source line: `824 <../src/bson.nim#L824>`__
+    source line: `834 <../src/bson.nim#L834>`__
 
     Create new binray Bson object with 'user-defined' subtype
 
@@ -322,7 +322,7 @@ bytes
 
         proc bytes*(bs: Bson): string =
 
-    source line: `663 <../src/bson.nim#L663>`__
+    source line: `676 <../src/bson.nim#L676>`__
 
     Serialize Bson document into a raw byte-stream
     
@@ -337,7 +337,7 @@ contains
 
         proc contains*(bs: Bson, key: string): bool =
 
-    source line: `910 <../src/bson.nim#L910>`__
+    source line: `920 <../src/bson.nim#L920>`__
 
     Checks if Bson document has a specified field
 
@@ -350,7 +350,7 @@ dbref
 
         proc dbref*(refCollection: string, refOid: Oid): Bson =
 
-    source line: `769 <../src/bson.nim#L769>`__
+    source line: `779 <../src/bson.nim#L779>`__
 
     Create a new DBRef (database reference) MongoDB bson type
     
@@ -371,7 +371,7 @@ del
 
         proc del*(bs: Bson, idx: int) =
 
-    source line: `871 <../src/bson.nim#L871>`__
+    source line: `881 <../src/bson.nim#L881>`__
 
 
 
@@ -383,7 +383,7 @@ del
 
         proc del*(bs: Bson, key: string) =
 
-    source line: `859 <../src/bson.nim#L859>`__
+    source line: `869 <../src/bson.nim#L869>`__
 
 
 
@@ -395,7 +395,7 @@ delete
 
         proc delete*(bs: Bson, idx: int) =
 
-    source line: `865 <../src/bson.nim#L865>`__
+    source line: `875 <../src/bson.nim#L875>`__
 
 
 
@@ -407,7 +407,7 @@ geo
 
         proc geo*(loc: GeoPoint): Bson =
 
-    source line: `832 <../src/bson.nim#L832>`__
+    source line: `842 <../src/bson.nim#L842>`__
 
     Convert array of two floats into Bson as MongoDB Geo-Point.
 
@@ -420,7 +420,7 @@ items
 
         iterator items*(bs: Bson): Bson =
 
-    source line: `895 <../src/bson.nim#L895>`__
+    source line: `905 <../src/bson.nim#L905>`__
 
     Iterate over Bson document or array fields
 
@@ -433,7 +433,7 @@ js
 
         proc js*(code: string): Bson =
 
-    source line: `801 <../src/bson.nim#L801>`__
+    source line: `811 <../src/bson.nim#L811>`__
 
     Create new Bson value representing JavaScript code bson type
 
@@ -446,7 +446,7 @@ len
 
         proc len*(bs: Bson):int =
 
-    source line: `846 <../src/bson.nim#L846>`__
+    source line: `856 <../src/bson.nim#L856>`__
 
 
 
@@ -458,7 +458,7 @@ maxkey
 
         proc maxkey*(): Bson =
 
-    source line: `793 <../src/bson.nim#L793>`__
+    source line: `803 <../src/bson.nim#L803>`__
 
     Create new Bson value representing 'Max key' bson type
 
@@ -471,7 +471,7 @@ merge
 
         proc merge*(a, b: Bson): Bson =
 
-    source line: `1025 <../src/bson.nim#L1025>`__
+    source line: `1035 <../src/bson.nim#L1035>`__
 
     Combine two BSON documents into a new one.
     
@@ -511,7 +511,7 @@ minkey
 
         proc minkey*(): Bson =
 
-    source line: `789 <../src/bson.nim#L789>`__
+    source line: `799 <../src/bson.nim#L799>`__
 
     Create new Bson value representing 'Min key' bson type
 
@@ -524,7 +524,7 @@ newBsonArray
 
         proc newBsonArray*(): Bson =
 
-    source line: `681 <../src/bson.nim#L681>`__
+    source line: `694 <../src/bson.nim#L694>`__
 
     Create new Bson array
 
@@ -537,7 +537,7 @@ newBsonDocument
 
         proc newBsonDocument*(): Bson =
 
-    source line: `676 <../src/bson.nim#L676>`__
+    source line: `689 <../src/bson.nim#L689>`__
 
     Create new empty Bson document
 
@@ -550,7 +550,7 @@ newBsonDocument
 
         proc newBsonDocument*(bytes: string): Bson =
 
-    source line: `1021 <../src/bson.nim#L1021>`__
+    source line: `1031 <../src/bson.nim#L1031>`__
 
     Create new Bson document from byte string
 
@@ -563,7 +563,7 @@ newBsonDocument
 
         proc newBsonDocument*(s: Stream): Bson =
 
-    source line: `923 <../src/bson.nim#L923>`__
+    source line: `933 <../src/bson.nim#L933>`__
 
     Create new Bson document from a byte stream
 
@@ -576,7 +576,7 @@ null
 
         proc null*(): Bson =
 
-    source line: `785 <../src/bson.nim#L785>`__
+    source line: `795 <../src/bson.nim#L795>`__
 
     Create new Bson 'null' value
 
@@ -589,7 +589,7 @@ pairs
 
         iterator pairs*(bs: Bson): tuple[key: string, val: Bson] =
 
-    source line: `904 <../src/bson.nim#L904>`__
+    source line: `914 <../src/bson.nim#L914>`__
 
     Iterate over Bson document
 
@@ -602,7 +602,7 @@ regex
 
         proc regex*(pattern: string, options: string): Bson =
 
-    source line: `797 <../src/bson.nim#L797>`__
+    source line: `807 <../src/bson.nim#L807>`__
 
     Create new Bson value representing Regexp bson type
 
@@ -615,7 +615,7 @@ timeUTC
 
         proc timeUTC*(time: Time): Bson =
 
-    source line: `839 <../src/bson.nim#L839>`__
+    source line: `849 <../src/bson.nim#L849>`__
 
     Create UTC datetime Bson object.
 
@@ -628,7 +628,7 @@ toBson
 
         proc toBson*(keyVals: openArray[tuple[key: string, val: Bson]]): Bson =
 
-    source line: `717 <../src/bson.nim#L717>`__
+    source line: `730 <../src/bson.nim#L730>`__
 
     Generic constructor for BSON data.
 
@@ -641,7 +641,7 @@ toBson
 
         proc toBson*(x: BsonTimestamp): Bson =
 
-    source line: `529 <../src/bson.nim#L529>`__
+    source line: `542 <../src/bson.nim#L542>`__
 
     Convert inner BsonTimestamp to Bson object
 
@@ -654,7 +654,7 @@ toBson
 
         proc toBson*(x: MD5Digest): Bson =
 
-    source line: `537 <../src/bson.nim#L537>`__
+    source line: `550 <../src/bson.nim#L550>`__
 
     Convert MD5Digest to Bson object
 
@@ -667,7 +667,7 @@ toBson
 
         proc toBson*(x: Oid): Bson =
 
-    source line: `331 <../src/bson.nim#L331>`__
+    source line: `343 <../src/bson.nim#L343>`__
 
     Convert Mongo Object Id to Bson object
     
@@ -683,7 +683,7 @@ toBson
 
         proc toBson*(x: Time): Bson =
 
-    source line: `510 <../src/bson.nim#L510>`__
+    source line: `523 <../src/bson.nim#L523>`__
 
     Convert Time to Bson object
 
@@ -696,7 +696,7 @@ toBson
 
         proc toBson*(x: bool): Bson =
 
-    source line: `491 <../src/bson.nim#L491>`__
+    source line: `504 <../src/bson.nim#L504>`__
 
     Convert bool to Bson object
 
@@ -709,7 +709,7 @@ toBson
 
         proc toBson*(x: float64): Bson =
 
-    source line: `374 <../src/bson.nim#L374>`__
+    source line: `387 <../src/bson.nim#L387>`__
 
     Convert float64 to Bson object
 
@@ -722,7 +722,7 @@ toBson
 
         proc toBson*(x: int): Bson =
 
-    source line: `476 <../src/bson.nim#L476>`__
+    source line: `489 <../src/bson.nim#L489>`__
 
     Convert int to Bson object
 
@@ -735,7 +735,7 @@ toBson
 
         proc toBson*(x: int32): Bson =
 
-    source line: `441 <../src/bson.nim#L441>`__
+    source line: `454 <../src/bson.nim#L454>`__
 
     Convert int32 to Bson object
 
@@ -748,7 +748,7 @@ toBson
 
         proc toBson*(x: int64): Bson =
 
-    source line: `416 <../src/bson.nim#L416>`__
+    source line: `429 <../src/bson.nim#L429>`__
 
     Convert int64 to Bson object
 
@@ -761,7 +761,7 @@ toBson
 
         proc toBson*(x: string): Bson =
 
-    source line: `393 <../src/bson.nim#L393>`__
+    source line: `406 <../src/bson.nim#L406>`__
 
     Convert string to Bson object
 
@@ -774,7 +774,7 @@ toBson
 
         proc toBson*(x: var MD5Context): Bson =
 
-    source line: `541 <../src/bson.nim#L541>`__
+    source line: `554 <../src/bson.nim#L554>`__
 
     Convert MD5Context to Bson object (still digest from current context).
     :WARNING: MD5Context is finalized during conversion.
@@ -788,7 +788,7 @@ toBson
 
         proc toBson*[T](vals: openArray[T]): Bson =
 
-    source line: `722 <../src/bson.nim#L722>`__
+    source line: `735 <../src/bson.nim#L735>`__
 
 
 
@@ -800,7 +800,7 @@ undefined
 
         proc undefined*(): Bson =
 
-    source line: `781 <../src/bson.nim#L781>`__
+    source line: `791 <../src/bson.nim#L791>`__
 
     Create new Bson 'undefined' value
 
@@ -813,7 +813,7 @@ update
 
         proc update*(a, b: Bson)=
 
-    source line: `1073 <../src/bson.nim#L1073>`__
+    source line: `1083 <../src/bson.nim#L1083>`__
 
     Modifies the content of document ``a`` with the updated content of document ``b``.
     
@@ -837,7 +837,7 @@ toBool
 
         converter toBool*(x: Bson): bool =
 
-    source line: `495 <../src/bson.nim#L495>`__
+    source line: `508 <../src/bson.nim#L508>`__
 
     Convert Bson object to bool
 
@@ -850,7 +850,7 @@ toBsonKind
 
         converter toBsonKind*(c: char): BsonKind =
 
-    source line: `186 <../src/bson.nim#L186>`__
+    source line: `192 <../src/bson.nim#L192>`__
 
     Convert char to BsonKind
 
@@ -863,7 +863,7 @@ toChar
 
         converter toChar*(bk: BsonKind): char =
 
-    source line: `178 <../src/bson.nim#L178>`__
+    source line: `184 <../src/bson.nim#L184>`__
 
     Convert BsonKind to char
 
@@ -876,7 +876,7 @@ toChar
 
         converter toChar*(sub: BsonSubtype): char =
 
-    source line: `182 <../src/bson.nim#L182>`__
+    source line: `188 <../src/bson.nim#L188>`__
 
     Convert BsonSubtype to char
 
@@ -889,7 +889,7 @@ toFloat64
 
         converter toFloat64*(x: Bson): float64 =
 
-    source line: `378 <../src/bson.nim#L378>`__
+    source line: `391 <../src/bson.nim#L391>`__
 
     Convert Bson object to float64
 
@@ -902,7 +902,7 @@ toInt
 
         converter toInt*(x: Bson): int =
 
-    source line: `466 <../src/bson.nim#L466>`__
+    source line: `479 <../src/bson.nim#L479>`__
 
     Convert Bson to int whether it is int32 or int64
 
@@ -915,7 +915,7 @@ toInt32
 
         converter toInt32*(x: Bson): int32 =
 
-    source line: `445 <../src/bson.nim#L445>`__
+    source line: `458 <../src/bson.nim#L458>`__
 
     Convert Bson to int32
 
@@ -928,7 +928,7 @@ toInt64
 
         converter toInt64*(x: Bson): int64 =
 
-    source line: `420 <../src/bson.nim#L420>`__
+    source line: `433 <../src/bson.nim#L433>`__
 
     Convert Bson object to int
 
@@ -941,7 +941,7 @@ toOid
 
         converter toOid*(x: Bson): Oid =
 
-    source line: `340 <../src/bson.nim#L340>`__
+    source line: `353 <../src/bson.nim#L353>`__
 
     Convert Bson to Mongo Object ID
     
@@ -959,7 +959,7 @@ toString
 
         converter toString*(x: Bson): string =
 
-    source line: `397 <../src/bson.nim#L397>`__
+    source line: `410 <../src/bson.nim#L410>`__
 
     Convert Bson to UTF8 string
 
@@ -972,7 +972,7 @@ toTime
 
         converter toTime*(x: Bson): Time =
 
-    source line: `514 <../src/bson.nim#L514>`__
+    source line: `527 <../src/bson.nim#L527>`__
 
     Convert Bson object to Time
 
@@ -985,7 +985,7 @@ toTimestamp
 
         converter toTimestamp*(x: Bson): BsonTimestamp =
 
-    source line: `533 <../src/bson.nim#L533>`__
+    source line: `546 <../src/bson.nim#L546>`__
 
     Convert Bson object to inner BsonTimestamp type
 
@@ -996,19 +996,6 @@ Macros and Templates
 ====================
 
 
-.. _`%*`.m:
-`%*`
----------------------------------------------------------
-
-    .. code:: nim
-
-        macro `%*`*(x: untyped): Bson =
-
-    source line: `753 <../src/bson.nim#L753>`__
-
-    Perform dict-like structure conversion into bson
-
-
 .. _`@@`.m:
 `@@`
 ---------------------------------------------------------
@@ -1017,7 +1004,7 @@ Macros and Templates
 
         macro `@@`*(x: untyped): Bson =
 
-    source line: `757 <../src/bson.nim#L757>`__
+    source line: `767 <../src/bson.nim#L767>`__
 
 
 
@@ -1029,7 +1016,7 @@ toBson
 
         template toBson*(b: Bson): Bson = b
 
-    source line: `726 <../src/bson.nim#L726>`__
+    source line: `739 <../src/bson.nim#L739>`__
 
     
 
@@ -1040,7 +1027,7 @@ toBson
 Table Of Contents
 =================
 
-1. `Introduction to bson <index.rst>`__
+1. `Introduction to bson <https://github.com/JohnAD/bson>`__
 2. Appendices
 
     A. `bson Reference <bson-ref.rst>`__
