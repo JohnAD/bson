@@ -127,7 +127,7 @@
 ## ======
 ##
 ## Large portions of this code were pulled from the nimongo project, a scalable
-## pure-nim mongodb driver. See `https://github.com/SSPkrolik/nimongo`__
+## pure-nim mongodb driver. See https://github.com/SSPkrolik/nimongo
 ##
 ## However, this library is NOT compatilible with nimongo, as nimongo relies on an
 ## internal implementation of BSON.
