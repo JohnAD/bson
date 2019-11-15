@@ -57,16 +57,16 @@
 ##
 ## .. code:: nim
 ##
-##     var binString: string = doc.bytes()
+##     var bString: string = doc.bytes()
 ##
-## Please keep in mind that this is a **binary** string and is not printable.
+## Please keep in mind that this is a **binary** **packed** string and is not printable.
 ##
 ## To convert a binary blob of data back into a Bson library document, pass
 ## the string into 'newBsonDocument' as a string parameter.
 ##
 ## .. code:: nim
 ##
-##     var newDoc = newBsonDocument(binString)
+##     var newDoc = newBsonDocument(bString)
 ##
 ##
 ## HANDLING TYPES
@@ -341,7 +341,7 @@ const
 
 
 proc toBson*(x: Oid): Bson =
-  ## Convert Mongo Object Id to Bson object
+  ## Convert Nim Object Id to BSON object. See the ``oids`` standard Nim library.
   ##
   ## If the Oid is all-zeroes ("000000000000000000000000"), then
   ## a null field is stored rather than an ObjectID value
@@ -385,7 +385,7 @@ proc `[]=`*(bs: Bson, key: string, value: Oid) =
 #
 
 proc toBson*(x: float64): Bson =
-  ## Convert float64 to Bson object
+  ## Convert value to Bson object
   return Bson(kind: BsonKindDouble, valueFloat64: x)
 
 converter toFloat64*(x: Bson): float64 =
@@ -393,7 +393,7 @@ converter toFloat64*(x: Bson): float64 =
   return x.valueFloat64
 
 proc `[]=`*(bs: Bson, key: string, value: float64) =
-  ## Modify Bson document field with an explicit float64 value
+  ## Modify Bson document field with an explicit value
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -403,8 +403,8 @@ proc `[]=`*(bs: Bson, key: string, value: float64) =
 # string
 #
 
-proc toBson*(x: string): Bson =
-  ## Convert string to Bson object
+proc toBson*(x: string): Bson =  #!GROUP=toBson
+  # Convert string to Bson object
   return Bson(kind: BsonKindStringUTF8, valueString: x)
 
 converter toString*(x: Bson): string =
@@ -415,8 +415,7 @@ converter toString*(x: Bson): string =
   else:
       return $x
 
-proc `[]=`*(bs: Bson, key: string, value: string) =
-  ## Modify Bson document field with an explicit string value
+proc `[]=`*(bs: Bson, key: string, value: string) =  #!GROUP=`[]=`
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -426,11 +425,11 @@ proc `[]=`*(bs: Bson, key: string, value: string) =
 # int64
 #
 
-proc toBson*(x: int64): Bson =
-  ## Convert int64 to Bson object
+proc toBson*(x: int64): Bson =   #!GROUP=toBson
+  # Convert int64 to Bson object
   return Bson(kind: BsonKindInt64, valueInt64: x)
 
-converter toInt64*(x: Bson): int64 =
+converter toInt64*(x: Bson): int64 =   #!GROUP=toBson
   ## Convert Bson object to int
   case x.kind
   of BsonKindInt64:
@@ -440,8 +439,8 @@ converter toInt64*(x: Bson): int64 =
   else:
       raiseWrongNodeException(x)
 
-proc `[]=`*(bs: Bson, key: string, value: int64) =
-  ## Modify Bson document field with an explicit int64 value
+proc `[]=`*(bs: Bson, key: string, value: int64) =  #!GROUP=`[]=`
+  # Modify Bson document field with an explicit int64 value
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -451,8 +450,8 @@ proc `[]=`*(bs: Bson, key: string, value: int64) =
 # int32
 #
 
-proc toBson*(x: int32): Bson =
-  ## Convert int32 to Bson object
+proc toBson*(x: int32): Bson =   #!GROUP=toBson
+  # Convert int32 to Bson object
   return Bson(kind: BsonKindInt32, valueInt32: x)
 
 converter toInt32*(x: Bson): int32 =
@@ -465,8 +464,8 @@ converter toInt32*(x: Bson): int32 =
   else:
       raiseWrongNodeException(x)
 
-proc `[]=`*(bs: Bson, key: string, value: int32) =
-  ## Modify Bson document field with an explicit int32 value
+proc `[]=`*(bs: Bson, key: string, value: int32) =  #!GROUP=`[]=`
+  # Modify Bson document field with an explicit int32 value
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -486,12 +485,12 @@ converter toInt*(x: Bson): int =
   else:
       raiseWrongNodeException(x)
 
-proc toBson*(x: int): Bson =
-  ## Convert int to Bson object
+proc toBson*(x: int): Bson =   #!GROUP=toBson
+  # Convert int to Bson object
   return Bson(kind: BsonKindInt64, valueInt64: x)
 
-proc `[]=`*(bs: Bson, key: string, value: int) =
-  ## Modify Bson document field with an explicit int value
+proc `[]=`*(bs: Bson, key: string, value: int) =  #!GROUP=`[]=`
+  # Modify Bson document field with an explicit int value
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -501,16 +500,16 @@ proc `[]=`*(bs: Bson, key: string, value: int) =
 # bool
 #
 
-proc toBson*(x: bool): Bson =
-  ## Convert bool to Bson object
+proc toBson*(x: bool): Bson =   #!GROUP=toBson
+  # Convert bool to Bson object
   return Bson(kind: BsonKindBool, valueBool: x)
 
 converter toBool*(x: Bson): bool =
   ## Convert Bson object to bool
   return x.valueBool
 
-proc `[]=`*(bs: Bson, key: string, value: bool) =
-  ## Modify Bson document field with an explicit bool value
+proc `[]=`*(bs: Bson, key: string, value: bool) =  #!GROUP=`[]=`
+  # Modify Bson document field with an explicit bool value
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -520,16 +519,16 @@ proc `[]=`*(bs: Bson, key: string, value: bool) =
 # Time
 #
 
-proc toBson*(x: Time): Bson =
-  ## Convert Time to Bson object
+proc toBson*(x: Time): Bson =  #!GROUP=toBson
+  # Convert Time to Bson object
   return Bson(kind: BsonKindTimeUTC, valueTime: x)
 
 converter toTime*(x: Bson): Time =
   ## Convert Bson object to Time
   return x.valueTime
 
-proc `[]=`*(bs: Bson, key: string, value: Time) =
-  ## Modify Bson document field with an explicit Time value
+proc `[]=`*(bs: Bson, key: string, value: Time) =  #!GROUP=`[]=`
+  # Modify Bson document field with an explicit Time value
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -539,16 +538,16 @@ proc `[]=`*(bs: Bson, key: string, value: Time) =
 # others
 #
 
-proc toBson*(x: BsonTimestamp): Bson =
-  ## Convert inner BsonTimestamp to Bson object
+proc toBson*(x: BsonTimestamp): Bson =  #!GROUP=toBson
+  # Convert inner BsonTimestamp to Bson object
   return Bson(kind: BsonKindTimestamp, valueTimestamp: x)
 
 converter toTimestamp*(x: Bson): BsonTimestamp =
   ## Convert Bson object to inner BsonTimestamp type
   return x.valueTimestamp
 
-proc toBson*(x: MD5Digest): Bson =
-  ## Convert MD5Digest to Bson object
+proc toBson*(x: MD5Digest): Bson =  #!GROUP=toBson
+  # Convert MD5Digest to Bson object
   return Bson(kind: BsonKindBinary, subtype: BsonSubtypeMd5, valueDigest: x)
 
 proc toBson*(x: var MD5Context): Bson =
@@ -593,11 +592,11 @@ proc boolToBytes(x: bool, res: var string) {.inline.} =
   podValueToBytes(if x: 1'u8 else: 0'u8, res)
 
 proc oidToBytes(x: Oid, res: var string) {.inline.} =
-  ## Convert Mongo Object ID data piece into series to bytes
+  # Convert Mongo Object ID data piece into series to bytes
   podValueToBytes(x, res)
 
 proc toBytes(bs: Bson, res: var string) =
-  ## Serialize Bson object into byte-stream
+  # Serialize Bson object into byte-stream
   case bs.kind
   of BsonKindDouble:
       float64ToBytes(bs.valueFloat64, res)
@@ -674,7 +673,7 @@ proc toBytes(bs: Bson, res: var string) =
       raiseWrongNodeException(bs)
 
 proc bytes*(bs: Bson): string =
-  ## Serialize Bson document into a raw byte-stream
+  ## Serialize a BSON document into a raw byte-stream.
   ##
   ## Returns a binary string (not generally printable)
   result = ""
@@ -702,7 +701,7 @@ proc newBsonArray*(): Bson =
 #   newBsonDocument()
 
 proc `[]`*(bs: Bson, key: string): Bson =
-  ## Get Bson document field
+  ## Get BSON object field
   if bs.kind == BsonKindDocument:
       return bs.valueDocument.getOrDefault(key)
   else:
@@ -716,7 +715,7 @@ proc `[]=`*(bs: Bson, key: string, value: Bson) =
     raiseWrongNodeException(bs)
 
 proc `[]`*(bs: Bson, key: int): Bson =
-  ## Get Bson array item by index
+  ## Get BSON array item by index
   if bs.kind == BsonKindArray:
       return bs.valueArray[key]
   else:
@@ -785,35 +784,51 @@ proc dbref*(refCollection: string, refOid: Oid): Bson =
   ## refOid
   ##   the ``_id`` of the document sitting in the collection
   ##
-  ## Returns a BSON object
+  ## Returns a new BSON object
   return Bson(kind: BsonKindDBPointer, refcol: refCollection, refoid: refOid)
 
 proc undefined*(): Bson =
   ## Create new Bson 'undefined' value
+  ##
+  ## Returns a new BSON object
   return Bson(kind: BsonKindUndefined)
 
 proc null*(): Bson =
-  ## Create new Bson 'null' value
+  ## Create new BSON 'null' value
+  ##
+  ## Returns a new BSON object
   return Bson(kind: BsonKindNull)
 
 proc minkey*(): Bson =
-  ## Create new Bson value representing 'Min key' bson type
+  ## Create new BSON value representing 'Min key' BSON type
+  ##
+  ## Returns a new BSON object
   return Bson(kind: BsonKindMinimumKey)
 
 proc maxkey*(): Bson =
-  ## Create new Bson value representing 'Max key' bson type
+  ## Create new BSON value representing 'Max key' BSON type
+  ##
+  ## Returns a new BSON object
   return Bson(kind: BsonKindMaximumKey)
 
 proc regex*(pattern: string, options: string): Bson =
-  ## Create new Bson value representing Regexp bson type
+  ## Create new Bson value representing Regexp BSON type
+  ##
+  ## Returns a new BSON object
   return Bson(kind: BsonKindRegexp, regex: pattern, options: options)
 
 proc js*(code: string): Bson =
   ## Create new Bson value representing JavaScript code bson type
+  ##
+  ## Returns a new BSON object
   return Bson(kind: BsonKindJSCode, valueCode: code)
 
 proc bin*(bindata: string): Bson =
   ## Create new binary Bson object with 'generic' subtype
+  ##
+  ## To convert it back to a "binary string", use ``binstr``.
+  ##
+  ## Returns a new BSON object
   return Bson(
       kind: BsonKindBinary,
       subtype: BsonSubtypeGeneric,
@@ -821,18 +836,27 @@ proc bin*(bindata: string): Bson =
   )
 
 proc binstr*(x: Bson): string =
-  case x.subtype:
-  of BsonSubtypeGeneric:     return x.valueGeneric
-  of BsonSubtypeFunction:    return x.valueFunction
-  of BsonSubtypeBinaryOld:   return x.valueBinOld
-  of BsonSubtypeUuidOld:     return x.valueUuidOld
-  of BsonSubtypeUuid:        return x.valueUuid
-  of BsonSubtypeUserDefined: return x.valueUserDefined
+  ## Generate a "binary string" equivalent of the BSON "Generic Binary" field type.
+  ##
+  ## This is used strictly for that field type field. If you are wanting to 
+  ## convert a BSON doc into it's true binary form, use ``bytes`` instead.
+  if x.kind == BsonKindBinary:
+    case x.subtype:
+    of BsonSubtypeGeneric:     return x.valueGeneric
+    of BsonSubtypeFunction:    return x.valueFunction
+    of BsonSubtypeBinaryOld:   return x.valueBinOld
+    of BsonSubtypeUuidOld:     return x.valueUuidOld
+    of BsonSubtypeUuid:        return x.valueUuid
+    of BsonSubtypeUserDefined: return x.valueUserDefined
+    else:
+      raiseWrongNodeException(x)      
   else:
-      raiseWrongNodeException(x)
+    raiseWrongNodeException(x)
 
 proc binuser*(bindata: string): Bson =
-  ## Create new binray Bson object with 'user-defined' subtype
+  ## Create new binary BSON object with 'user-defined' subtype
+  ##
+  ## Returns a new BSON object
   return Bson(
       kind: BsonKindBinary,
       subtype: BsonSubtypeUserDefined,
@@ -841,19 +865,28 @@ proc binuser*(bindata: string): Bson =
 
 proc geo*(loc: GeoPoint): Bson =
   ## Convert array of two floats into Bson as MongoDB Geo-Point.
+  ##
+  ## Returns a new BSON object
   return Bson(
       kind: BsonKindArray,
       valueArray: @[loc[0].toBson(), loc[1].toBson()]
   )
 
 proc timeUTC*(time: Time): Bson =
-  ## Create UTC datetime Bson object.
+  ## Create UTC datetime BSON object.
+  ##
+  ## Returns a new BSON object.
   return Bson(
     kind: BsonKindTimeUTC,
     valueTime: time
   )
 
 proc len*(bs: Bson):int =
+  ## Get the length of an array or the number of fields in an object.
+  ##
+  ## If not an array or object, an exception is generated.
+  ##
+  ## Returns the length as an integer.
   if bs.kind == BsonKindArray:
       result = bs.valueArray.len
   elif bs.kind == BsonKindDocument:
@@ -861,28 +894,42 @@ proc len*(bs: Bson):int =
   else:
       raiseWrongNodeException(bs)
 
-
 proc add*[T](bs: Bson, value: T): Bson {.discardable.} =
+  ## Add a new BSON item to the the array's list.
+  ##
+  ## It both returns a new BSON array and modifies the original in-place.
   result = bs
   result.valueArray.add(value.toBson())
 
 proc del*(bs: Bson, key: string) =
+  ## Deletes a field from a BSON object or array.
+  ##
+  ## If passed a string, it removes a field from an object.
+  ## If passed an integer, it removes an item by index from an array
+  ##
+  ## This procedure modifies the object that is passed to it.
   if bs.kind == BsonKindDocument:
-      bs.valueDocument.del(key)
+    bs.valueDocument.del(key)
   else:
-      raiseWrongNodeException(bs)
+    raiseWrongNodeException(bs)
 
-proc delete*(bs: Bson, idx: int) =
+proc del*(bs: Bson, idx: int) =  #!GROUP=del  
   if bs.kind == BsonKindArray:
-      bs.valueArray.delete(idx)
+    bs.valueArray.del(idx)
   else:
-      raiseWrongNodeException(bs)
+    raiseWrongNodeException(bs)
 
-proc del*(bs: Bson, idx: int) =
-  if bs.kind == BsonKindArray:
-      bs.valueArray.del(idx)
+proc delete*(bs: Bson, key: string) =  #!GROUP=del
+  if bs.kind == BsonKindDocument:
+    bs.valueDocument.del(key)
   else:
-      raiseWrongNodeException(bs)
+    raiseWrongNodeException(bs)
+
+proc delete*(bs: Bson, idx: int) =  #!GROUP=del
+  if bs.kind == BsonKindArray:
+    bs.valueArray.del(idx)
+  else:
+    raiseWrongNodeException(bs)
 
 proc `{}`*(bs: Bson, keys: varargs[string]): Bson =
   var b = bs
@@ -903,7 +950,9 @@ proc `{}=`*(bs: Bson, keys: varargs[string], value: Bson) =
   bs[keys[^1]] = value
 
 iterator items*(bs: Bson): Bson =
-  ## Iterate over Bson document or array fields
+  ## Iterate over BSON object field values or array items
+  ##
+  ## Each calls returns one BSON item.
   if bs.kind == BsonKindDocument:
       for _, v in bs.valueDocument:
           yield v
@@ -912,13 +961,17 @@ iterator items*(bs: Bson): Bson =
           yield item
 
 iterator pairs*(bs: Bson): tuple[key: string, val: Bson] =
-  ## Iterate over Bson document
+  ## Iterate over BSON object's fields
+  ##
+  ## Each call returns one (key, value) tuple.
   if bs.kind == BsonKindDocument:
       for k, v in bs.valueDocument:
           yield (k, v)
 
 proc contains*(bs: Bson, key: string): bool =
   ## Checks if Bson document has a specified field
+  ##
+  ## Returns true if found, false otherwise.
   if bs.kind == BsonKindDocument:
     return key in bs.valueDocument
   else:

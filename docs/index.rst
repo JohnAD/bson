@@ -61,16 +61,16 @@ use the 'bytes' function:
 
 .. code:: nim
 
-    var binString: string = doc.bytes()
+    var bString: string = doc.bytes()
 
-Please keep in mind that this is a **binary** string and is not printable.
+Please keep in mind that this is a **binary** **packed** string and is not printable.
 
 To convert a binary blob of data back into a Bson library document, pass
 the string into 'newBsonDocument' as a string parameter.
 
 .. code:: nim
 
-    var newDoc = newBsonDocument(binString)
+    var newDoc = newBsonDocument(bString)
 
 
 HANDLING TYPES
