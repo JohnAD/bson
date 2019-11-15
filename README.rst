@@ -92,52 +92,30 @@ The BSON specification calls for 18 types of data (and a few subtypes).
 
 Not all of them are fully supported by the libary yet.
 
-+--------------------------------+-----------------+---------------------------+
-| BSON                           | Nim Equiv       | Notes                     |
-+================================+=================+===========================+
-| 64-bit binary floating point   | float           | Nim defaults to 64 bit    |
-+--------------------------------+-----------------+---------------------------+
-| UTF-8 string                   | string          |                           |
-+--------------------------------+-----------------+---------------------------+
-| Embedded document              | newBsonDocument | from this library. for    |
-|                                |                 | key/value pairs, the key  |
-|                                |                 | must always be a string   |
-+--------------------------------+-----------------+---------------------------+
-| Array                          | newBsonArray    | actually a list, not an   |
-|                                |                 | array. You can mix types. |
-+--------------------------------+-----------------+---------------------------+
-| Binary data                    | string (binary) | not printable, but works  |
-+--------------------------------+-----------------+---------------------------+
-| ObjectId                       | Oid             | std "oids" library        |
-+--------------------------------+-----------------+---------------------------+
-| Boolean "false"                | bool = false    |                           |
-+--------------------------------+-----------------+---------------------------+
-| Boolean "true"                 | bool = true     |                           |
-+--------------------------------+-----------------+---------------------------+
-| UTC datetime                   | Time            | std "times" library       |
-+--------------------------------+-----------------+---------------------------+
-| Null value                     | null            | from this library         |
-+--------------------------------+-----------------+---------------------------+
-| Regular expression             | regex()         | from this library         |
-+--------------------------------+-----------------+---------------------------+
-| DBPointer (deprecated)         | dbref()         | from this library         |
-+--------------------------------+-----------------+---------------------------+
-| JavaScript code                | js()            | from this library         |
-+--------------------------------+-----------------+---------------------------+
-| JavaScript code w/ scope       |                 |                           |
-+--------------------------------+-----------------+---------------------------+
-| 32-bit integer                 | int32           |                           |
-+--------------------------------+-----------------+---------------------------+
-| Timestamp                      | BsonTimestamp   | from this library         |
-+--------------------------------+-----------------+---------------------------+
-| 64-bit integer                 | int64           |                           |
-+--------------------------------+-----------------+---------------------------+
-| 128-bit decimal floating point |                 | would like to support !   |
-+--------------------------------+-----------------+---------------------------+
-| Min key                        |                 |                           |
-+--------------------------------+-----------------+---------------------------+
-| Max key                        |                 |                           |
-+--------------------------------+-----------------+---------------------------+
+=============================== ================= ===========================
+BSON                            Nim Equiv         Notes
+=============================== ================= ===========================
+64-bit binary floating point    float             Nim defaults to 64 bit
+UTF-8 string                    string
+Embedded document               newBsonDocument   from this library. for key/value pairs, the key must always be a string
+Array                           newBsonArray      actually a list, not an array. You can mix types.
+Binary data                     string (binary)   not printable, but works
+ObjectId                        Oid               std "oids" library
+Boolean "false"                 bool = false
+Boolean "true"                  bool = true
+UTC datetime                    Time              std "times" library
+Null value                      null              from this library
+Regular expression              regex()           from this library
+DBPointer (deprecated)          dbref()           from this library
+JavaScript code                 js()              from this library
+JavaScript code w/ scope
+32-bit integer                  int32
+Timestamp                       BsonTimestamp     from this library
+64-bit integer                  int64
+128-bit decimal floating point                    would like to support !
+Min key
+Max key
+=============================== ================= ===========================
 
 Credit
 ======

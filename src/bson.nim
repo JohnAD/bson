@@ -76,52 +76,30 @@
 ##
 ## Not all of them are fully supported by the libary yet.
 ##
-## +--------------------------------+-----------------+---------------------------+
-## | BSON                           | Nim Equiv       | Notes                     |
-## +================================+=================+===========================+
-## | 64-bit binary floating point   | float           | Nim defaults to 64 bit    |
-## +--------------------------------+-----------------+---------------------------+
-## | UTF-8 string                   | string          |                           |
-## +--------------------------------+-----------------+---------------------------+
-## | Embedded document              | newBsonDocument | from this library. for    |
-## |                                |                 | key/value pairs, the key  |
-## |                                |                 | must always be a string   |
-## +--------------------------------+-----------------+---------------------------+
-## | Array                          | newBsonArray    | actually a list, not an   |
-## |                                |                 | array. You can mix types. |
-## +--------------------------------+-----------------+---------------------------+
-## | Binary data                    | string (binary) | not printable, but works  |
-## +--------------------------------+-----------------+---------------------------+
-## | ObjectId                       | Oid             | std "oids" library        |
-## +--------------------------------+-----------------+---------------------------+
-## | Boolean "false"                | bool = false    |                           |
-## +--------------------------------+-----------------+---------------------------+
-## | Boolean "true"                 | bool = true     |                           |
-## +--------------------------------+-----------------+---------------------------+
-## | UTC datetime                   | Time            | std "times" library       |
-## +--------------------------------+-----------------+---------------------------+
-## | Null value                     | null            | from this library         |
-## +--------------------------------+-----------------+---------------------------+
-## | Regular expression             | regex()         | from this library         |
-## +--------------------------------+-----------------+---------------------------+
-## | DBPointer (deprecated)         | dbref()         | from this library         |
-## +--------------------------------+-----------------+---------------------------+
-## | JavaScript code                | js()            | from this library         |
-## +--------------------------------+-----------------+---------------------------+
-## | JavaScript code w/ scope       |                 |                           |
-## +--------------------------------+-----------------+---------------------------+
-## | 32-bit integer                 | int32           |                           |
-## +--------------------------------+-----------------+---------------------------+
-## | Timestamp                      | BsonTimestamp   | from this library         |
-## +--------------------------------+-----------------+---------------------------+
-## | 64-bit integer                 | int64           |                           |
-## +--------------------------------+-----------------+---------------------------+
-## | 128-bit decimal floating point |                 | would like to support !   |
-## +--------------------------------+-----------------+---------------------------+
-## | Min key                        |                 |                           |
-## +--------------------------------+-----------------+---------------------------+
-## | Max key                        |                 |                           |
-## +--------------------------------+-----------------+---------------------------+
+## =============================== ================= =========================== 
+## BSON                            Nim Equiv         Notes                     
+## =============================== ================= =========================== 
+## 64-bit binary floating point    float             Nim defaults to 64 bit    
+## UTF-8 string                    string                                     
+## Embedded document               newBsonDocument   from this library. for key/value pairs, the key must always be a string   
+## Array                           newBsonArray      actually a list, not an array. You can mix types. 
+## Binary data                     string (binary)   not printable, but works  
+## ObjectId                        Oid               std "oids" library        
+## Boolean "false"                 bool = false                               
+## Boolean "true"                  bool = true                                
+## UTC datetime                    Time              std "times" library       
+## Null value                      null              from this library         
+## Regular expression              regex()           from this library         
+## DBPointer (deprecated)          dbref()           from this library         
+## JavaScript code                 js()              from this library         
+## JavaScript code w/ scope                                                   
+## 32-bit integer                  int32                                      
+## Timestamp                       BsonTimestamp     from this library         
+## 64-bit integer                  int64                                      
+## 128-bit decimal floating point                    would like to support !   
+## Min key                                                                    
+## Max key                                                                    
+## =============================== ================= =========================== 
 ##
 ## Credit
 ## ======
@@ -371,10 +349,12 @@ converter toOid*(x: Bson): Oid =
     result = allZeroesOid
 
 proc `[]=`*(bs: Bson, key: string, value: Oid) =
-  ## Modify Bson document field with an explicit Oid value
+  ## Modify BSON object field with an explicit value
   ##
-  ## If the Oid is all-zeroes ("000000000000000000000000"), then
-  ## a null field is stored rather than an ObjectID value
+  ## If setting an ``Oid`` and the Object ID is all-zeroes ("000000000000000000000000"), then
+  ## a null field is stored rather than an Object ID value
+  ##
+  ## Returns a Bson object
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
@@ -392,8 +372,8 @@ converter toFloat64*(x: Bson): float64 =
   ## Convert Bson object to float64
   return x.valueFloat64
 
-proc `[]=`*(bs: Bson, key: string, value: float64) =
-  ## Modify Bson document field with an explicit value
+proc `[]=`*(bs: Bson, key: string, value: float64) = #!GROUP=`[]=`
+  # Modify Bson document field with an explicit value
   if bs.kind == BsonKindDocument:
     bs.valueDocument[key] = toBson(value)
   else:
