@@ -135,3 +135,6 @@ Table Of Contents
 2. Appendices
 
     A. `bson Reference <https://github.com/JohnAD/bson/blob/master/docs/bson-ref.rst>`__
+    B. `bson/marshal Reference <https://github.com/JohnAD/bson/blob/master/docs/bson-marshal-ref.rst>`__
+    C. `bson/generators General Documentation <https://github.com/JohnAD/bson/blob/master/docs/bson-generators-gen.rst>`__
+    D. `bson/generators Reference <https://github.com/JohnAD/bson/blob/master/docs/bson-generators-ref.rst>`__

@@ -112,12 +112,10 @@
 
 
 
-import algorithm
 import base64
 import macros
 import md5
 import oids
-import sequtils
 import streams
 import strutils
 import times
@@ -718,8 +716,9 @@ proc toBson*[T](vals: openArray[T]): Bson =
 template toBson*(b: Bson): Bson = b
   ##
 
-proc toBson(x: NimNode): NimNode {.compileTime.} =
+proc toBson*(x: NimNode): NimNode {.compileTime.} =
   ## Convert NimNode into BSON document
+
   case x.kind
 
   of nnkBracket:
@@ -746,15 +745,7 @@ proc toBson(x: NimNode): NimNode {.compileTime.} =
 macro `@@`*(x: untyped): Bson =
   result = toBson(x)
 
-# template B*(key: string, val: Bson): Bson =  ## Shortcut for `newBsonDocument`
-#   let b = newBsonDocument()
-#   b[key] = val
-#   b
 
-# template B*[T](key: string, values: seq[T]): Bson =
-#   let b = newBsonDocument()
-#   b[key] = values
-#   b
 proc dbref*(refCollection: string, refOid: Oid): Bson =
   ## Create a new DBRef (database reference) MongoDB bson type
   ##
@@ -1130,3 +1121,58 @@ proc update*(a, b: Bson)=
     for k, v in b:
         if a[k].isNil:
             a[k] = v
+
+
+# macro to*(node: JsonNode, T: typedesc): untyped =
+#   ## `Unmarshals`:idx: the specified node into the object type specified.
+#   ##
+#   ## Known limitations:
+#   ##
+#   ##   * Heterogeneous arrays are not supported.
+#   ##   * Sets in object variants are not supported.
+#   ##   * Not nil annotations are not supported.
+#   ##
+#   ## Example:
+#   ##
+#   ## .. code-block:: Nim
+#   ##     let jsonNode = parseJson("""
+#   ##        {
+#   ##          "person": {
+#   ##            "name": "Nimmer",
+#   ##            "age": 21
+#   ##          },
+#   ##          "list": [1, 2, 3, 4]
+#   ##        }
+#   ##     """)
+#   ##
+#   ##     type
+#   ##       Person = object
+#   ##         name: string
+#   ##         age: int
+#   ##
+#   ##       Data = object
+#   ##         person: Person
+#   ##         list: seq[int]
+#   ##
+#   ##     var data = to(jsonNode, Data)
+#   ##     doAssert data.person.name == "Nimmer"
+#   ##     doAssert data.person.age == 21
+#   ##     doAssert data.list == @[1, 2, 3, 4]
+
+#   let typeNode = getTypeImpl(T)
+#   expectKind(typeNode, nnkBracketExpr)
+#   doAssert(($typeNode[0]).normalize == "typedesc")
+
+#   # Create `temp` variable to store the result in case the user calls this
+#   # on `parseJson` (see bug #6604).
+#   result = newNimNode(nnkStmtListExpr)
+#   let temp = genSym(nskLet, "temp")
+#   result.add quote do:
+#     let `temp` = `node`
+
+#   let constructor = createConstructor(typeNode[1], temp)
+#   result.add(postProcessValue(constructor))
+
+#   # echo(treeRepr(result))
+#   # echo(toStrLit(result))
+
