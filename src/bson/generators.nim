@@ -5,15 +5,14 @@ import
   typetraits,
   tables
 
-## This file contains source code generation procedures. It is used both externaly
-## by other libraries (such as `norm`), as well as internally by the ``bson`` library
-## for marshaling.
+# This file contains source code generation procedures. It is used both externaly
+# by other libraries (such as `norm`), as well as internally by the ``bson`` library
+# for marshaling.
 
 
 type
   PragmaKind* = enum
-    ## There are two kinds of pragmas: flags and key-value pairs:
-
+    ## There are two kinds of pragmas: flags and key-value pairs
     pkFlag, pkKval
 
   PragmaRepr* = object
@@ -129,7 +128,7 @@ proc seqTypeNames(name: string): seq[string] =
 
 proc restoreSeqType(s: seq[string]): string = 
   ## The opposite of seqTypeNames, turns a sequence of parts back
-  ## into a string. Used for building intermediate conditions in applyBson.
+  ## into a string. Used for building intermediate conditions in pull.
   var
     temp = reversed(s)
   for index, entry in temp.pairs():
@@ -153,6 +152,8 @@ proc toPragmaReprs(pragmaDefs: NimNode): seq[PragmaRepr] =
 proc toSignatureRepr(def: NimNode): SignatureRepr =
   ## Convert a signature definition into a ``SignatureRepr``.
   ## Special thanks to https://github.com/moigagoo and his ``norm`` library
+  # echo "---"
+  # echo def.treeRepr
   expectKind(def[0], {nnkIdent, nnkIdentDefs, nnkPostfix, nnkPragmaExpr, nnkSym})
   case def[0].kind
     of nnkIdent:
@@ -177,22 +178,22 @@ proc toSignatureRepr(def: NimNode): SignatureRepr =
     else: discard
 
 
-# proc toObjRepr*(typeDef: NimNode): ObjRepr =
-#   ## Convert an object type definition into an ``ObjRepr``.
-#   ##
-#   ## The "typeDef" is expected to represent a raw Type definition.
-#   ##
-#   ## Special thanks to https://github.com/moigagoo and his ``norm`` library
-#   echo typeDef.treeRepr
-#   result.signature = toSignatureRepr(typeDef)
+proc toObjRepr*(typeDef: NimNode): ObjRepr =
+  ## Convert an object type definition into an ``ObjRepr``.
+  ##
+  ## The "typeDef" is expected to represent a raw Type definition.
+  ##
+  ## Special thanks to https://github.com/moigagoo and his ``norm`` library
+  # echo typeDef.treeRepr
+  result.signature = toSignatureRepr(typeDef)
 
-#   expectKind(typeDef[2], nnkObjectTy)
+  expectKind(typeDef[2], nnkObjectTy)
 
-#   for fieldDef in typeDef[2][2]:
-#     var field = FieldRepr()
-#     field.signature = toSignatureRepr(fieldDef)
-#     field.typ = fieldDef[1]
-#     result.fields.add field
+  for fieldDef in typeDef[2][2]:
+    var field = FieldRepr()
+    field.signature = toSignatureRepr(fieldDef)
+    field.typ = fieldDef[1]
+    result.fields.add field
 
 
 proc toVarObjRepr*(typeDef: NimNode, typeName: string): ObjRepr =
@@ -218,30 +219,72 @@ proc toVarObjRepr*(typeDef: NimNode, typeName: string): ObjRepr =
       result.fields.add field
 
 
+proc recurseSubObjects(obj: ObjRepr, objs: var seq[ObjRepr])  # forward reference
+
+
+proc recurseTyp(typ: NimNode, objs: var seq[ObjRepr]) =
+  # echo field.typ.treeRepr
+
+  let fullTypeName = reconstructType(typ)
+  let tseq = seqTypeNames(fullTypeName)
+  let typeName = tseq[0]
+  # echo "HERE1 " & typ.treeRepr
+  # echo "HERE1a " & typeName
+
+  if typeName in bsonBasicTypeList:
+    return
+  elif typeName=="seq":
+    case typ.kind:
+    of nnkBracketExpr:
+      let subType = typ[1]
+      recurseTyp(subType, objs)
+    else:
+      raise newException(KeyError, "unable to handle subtype $1".format(typ.treeRepr))
+  elif typeName=="Option":
+    case typ.kind:
+    of nnkBracketExpr:
+      let subType = typ[1]
+      recurseTyp(subType, objs)
+    else:
+      raise newException(KeyError, "unable to handle subtype $1".format(typ.treeRepr))
+  elif typeName=="N":
+    case typ.kind:
+    of nnkBracketExpr:
+      let subType = typ[1]
+      recurseTyp(subType, objs)
+    else:
+      raise newException(KeyError, "unable to handle subtype $1".format(typ.treeRepr))
+  else:
+    if bsonObjectNamesRegistry.contains(typeName):
+      return
+    else:
+      var imp = getTypeImpl(typ)
+      # echo "HERE2 " & imp.treeRepr
+      if imp.kind == nnkObjectTy:
+        let subObjRepr = imp.toVarObjRepr(typeName)
+        objs.add subObjRepr
+        bsonObjectNamesRegistry.add typeName
+        recurseSubObjects(subObjRepr, objs)
+      elif imp.kind == nnkBracketExpr:
+        imp = getImpl(typ)
+        # echo "HERE3" & imp.treeRepr
+        let subObjRepr = imp.toObjRepr()
+        objs.add subObjRepr
+        bsonObjectNamesRegistry.add typeName
+        recurseSubObjects(subObjRepr, objs)
+      else:
+        raise newException(KeyError, "unable to handle subtype $1".format(typ.treeRepr))
+
+
+proc recurseSubObjects(obj: ObjRepr, objs: var seq[ObjRepr]) =
+  for field in obj.fields:
+    recurseTyp(field.typ, objs)
+
+
 proc listSubObjects*(obj: ObjRepr): seq[ObjRepr] =
   ## For any object, list any object in it fields (recursively) that
   ## have not yet been added to the compile-time registry.
-  for field in obj.fields:
-    # echo field.typ.treeRepr
-    let fullTypeName = reconstructType(field.typ)
-    let tseq = seqTypeNames(fullTypeName)
-    let typeName = tseq[0]
-    # echo tseq
-
-    if typeName in bsonBasicTypeList:
-      continue
-    elif typeName=="seq":
-      continue # TODO
-    elif typeName=="Option":
-      continue # TODO
-    elif typeName=="N":
-      continue # TODO
-    else:
-      if bsonObjectNamesRegistry.contains(typeName):
-        continue
-      else:
-        let imp = getTypeImpl(field.typ)
-        result.add imp.toVarObjRepr(typeName)
+  recurseSubObjects(obj, result)
 
 
 proc nextVar(prefix: string): string =
@@ -349,7 +392,7 @@ proc genSeqToBson(fieldName, dest: string, typeList: seq[string], tab: int): str
     result &= t & "  var $1 = null()\n".format(inner)
     result &= genBasicToBson(entry, inner, nextType, tab+2, fromSeq=true)
   elif nextType in bsonObjectNamesRegistry:
-    result &= t & "  var $1 = toBson($2, force)\n".format(inner, entry)
+    result &= t & "  var $1 = toBson($2)\n".format(inner, entry)
   elif nextType == "N":
     result &= genNToBson(entry, inner, typeList[1 .. typeList.high], tab+2)
   else:
@@ -360,7 +403,7 @@ proc genSeqToBson(fieldName, dest: string, typeList: seq[string], tab: int): str
   result &= t & "  $1.add $2\n".format(dest, inner)
 
 
-proc genObjectToBson*(dbObjReprs: seq[ObjRepr]): string =
+proc genObjectToBson*(dbObjReprs: seq[ObjRepr], blind=false): string =
   ## this procedure generates new procedures the convert the values in an
   ## existing "type" object to a BSON object.
   ## So, for example, with object defined as:
@@ -379,17 +422,17 @@ proc genObjectToBson*(dbObjReprs: seq[ObjRepr]): string =
   ##
   ## .. code:: nim
   ##
-  ##     proc toBson(obj: Pet, force = false): Bson {.used.} =
+  ##     proc toBson(obj: Pet): Bson {.used.} =
   ##       result = newBsonDocument()
   ##       result["shortName"] = toBson(obj.shortName)
-  ##     proc toBson(obj: User, force = false): Bson {.used.} =
+  ##     proc toBson(obj: User): Bson {.used.} =
   ##       result = newBsonDocument()
   ##       result["displayName"] = toBson(obj.displayName)
   ##       if obj.weight.isNone:
   ##         result["weight"] = null()
   ##       else:
   ##         result["weight"] = toBson(obj.weight.get())
-  ##       result["thePet"] = toBson(obj.thePet, force)
+  ##       result["thePet"] = toBson(obj.thePet)
   var
     proc_map = initOrderedTable[string, string]() # object: procedure string
     objectName = ""
@@ -407,7 +450,8 @@ proc genObjectToBson*(dbObjReprs: seq[ObjRepr]): string =
   for obj in dbObjReprs:
     objectName = obj.signature.name
     key = objectName
-    proc_map[key] =  "proc toBson(obj: $1, force = false): Bson {.used.} =\n".format(objectName)
+    proc_map[key] = ""
+    proc_map[key] &= "proc toBson(obj: $1): Bson {.used.} =\n".format(objectName)
     proc_map[key] &= "  result = newBsonDocument()\n"
     proc_map[key] &= "\n"
     #
@@ -429,14 +473,14 @@ proc genObjectToBson*(dbObjReprs: seq[ObjRepr]): string =
       elif typeName=="N":
         proc_map[key] &= genNToBson("obj.$1".format(fieldName), "result[\"$1\"]".format(bsonFieldName), typeList, tab)
       else:
-        if bsonObjectNamesRegistry.contains(typeName):
-          proc_map[key] &= "  result[\"$1\"] = toBson(obj.$1, force)\n".format(fieldName)
+        if bsonObjectNamesRegistry.contains(typeName) or blind:
+          proc_map[key] &= "  result[\"$1\"] = toBson(obj.$1)\n".format(fieldName)
         else:
           raise newException(
             KeyError, 
             "In object $1, the field $2's type is not known to the bson library[4]. If it is a subtending object, is $3 defined by dB, dbAddCollection, or dbAddObject yet?".format(objectName, fieldName, typeName)
           )
-  #
+    #
   # finish up all procedure strings
   #
   for key, s in proc_map.pairs():
@@ -501,7 +545,7 @@ proc genBsonToOption(src, fieldName: string, typeList: seq[string], tab:int, ski
       let temp = nextVar("temp")
       result &= t & "else:\n"
       result &= t & "  var $1: $2\n".format(temp, subTypeName)
-      result &= t & "  applyBson($1, $2)\n".format(temp, src)
+      result &= t & "  pull($1, $2)\n".format(temp, src)
       result &= t & "  $1$2 some $3\n".format(fieldName, assignment, temp)
     elif nextType=="seq":
       result &= t & "else:\n"
@@ -552,7 +596,7 @@ proc genBsonToOption(src, fieldName: string, typeList: seq[string], tab:int, ski
       let temp = nextVar("temp")
       result &= t & "  else:\n"
       result &= t & "    var $1: $2\n".format(temp, subTypeName)
-      result &= t & "    applyBson($1, $2)\n".format(temp, src)
+      result &= t & "    pull($1, $2)\n".format(temp, src)
       result &= t & "    $1$2 some $3\n".format(fieldName, assignment, temp)
     elif nextType=="seq":
       let temp = nextVar("temp")
@@ -617,7 +661,7 @@ proc genBsonToN(src, fieldName: string, typeList: seq[string], tab:int, skipChec
       let temp = nextVar("temp")
       result &= t & "else:\n"
       result &= t & "  var $1: $2\n".format(temp, subTypeName)
-      result &= t & "  applyBson($1, $2)\n".format(temp, src)
+      result &= t & "  pull($1, $2)\n".format(temp, src)
       result &= t & "  $1$2 $3\n".format(fieldName, assignment, temp)
     elif nextType=="seq":
       let temp = nextVar("temp")
@@ -679,7 +723,7 @@ proc genBsonToN(src, fieldName: string, typeList: seq[string], tab:int, skipChec
       let temp = nextVar("temp")
       result &= t & "  else:\n"
       result &= t & "    var $1: $2\n".format(temp, subTypeName)
-      result &= t & "    applyBson($1, $2)\n".format(temp, src)
+      result &= t & "    pull($1, $2)\n".format(temp, src)
       result &= t & "    $1$2 $3\n".format(fieldName, assignment, temp)
     elif nextType=="seq":
       let temp = nextVar("temp")
@@ -741,7 +785,7 @@ proc genBsonToSeq(src, fieldName: string, typeList: seq[string], tab:int, skipCh
     if nextType in bsonBasicTypeList:
       result &= genBsonToBasic(item, inner, nextType, tab+2, skipCheck=true, fromSeq=true)
     elif nextType in bsonObjectNamesRegistry:
-      result &= t & "  applyBson($1, $2)\n".format(inner, item)
+      result &= t & "  pull($1, $2)\n".format(inner, item)
     elif nextType == "seq":
       result &= genBsontoSeq(item, inner, typeList[1 .. typeList.high], tab+2, skipCheck=true, fromSeq=false)
     elif nextType == "Option":
@@ -757,7 +801,7 @@ proc genBsonToSeq(src, fieldName: string, typeList: seq[string], tab:int, skipCh
     if nextType in bsonBasicTypeList:
       result &= genBsonToBasic(item, inner, nextType, tab+4, skipCheck=true, fromSeq=true)
     elif nextType in bsonObjectNamesRegistry:
-      result &= t & "    applyBson($1, $2)\n".format(inner, item)
+      result &= t & "    pull($1, $2)\n".format(inner, item)
     elif nextType == "seq":
       result &= genBsontoSeq(item, inner, typeList[1 .. typeList.high], tab+4, skipCheck=true, fromSeq=true)
     elif nextType == "Option":
@@ -767,10 +811,11 @@ proc genBsonToSeq(src, fieldName: string, typeList: seq[string], tab:int, skipCh
     result &= t & "    $1.add $2\n".format(fieldName, inner) # if we are in the loop, we ALWAYS add an item for each iteration
 
 
-proc genBsonToObject*(dbObjReprs: seq[ObjRepr]): string =
+proc genBsonToObject*(dbObjReprs: seq[ObjRepr], blind=false): string =
   ## this procedure generates new procedures that map values found in an
   ## existing "type" object to a Bson object.
   ## So, for example, with object defined as:
+  ##
   ## .. code:: nim
   ##
   ##     type
@@ -785,12 +830,12 @@ proc genBsonToObject*(dbObjReprs: seq[ObjRepr]): string =
   ##
   ## .. code:: nim
   ##
-  ##     proc applyBson(obj: var Pet, doc: Bson) {.used.} =
+  ##     proc pull(obj: var Pet, doc: Bson) {.used.} =
   ##       discard
   ##       if not doc["shortName"].isNil:
   ##         if doc["shortName"].kind in @[BsonKindStringUTF8]:
   ##           obj.shortName = doc["shortName"].toString
-  ##     proc applyBson(obj: var User, doc: Bson) {.used.} =
+  ##     proc pull(obj: var User, doc: Bson) {.used.} =
   ##       discard
   ##       if not doc["displayName"].isNil:
   ##         if doc["displayName"].kind in @[BsonKindStringUTF8]:
@@ -802,7 +847,7 @@ proc genBsonToObject*(dbObjReprs: seq[ObjRepr]): string =
   ##           obj.weight = some doc["weight"].toFloat64
   ##       if doc.contains("thePet"):
   ##         obj.thePet = Pet()
-  ##         applyBson(obj.thePet, doc["thePet"])
+  ##         pull(obj.thePet, doc["thePet"])
   var
     proc_map = initOrderedTable[string, string]() # object: procedure string
     objectName = ""
@@ -812,12 +857,13 @@ proc genBsonToObject*(dbObjReprs: seq[ObjRepr]): string =
     key = ""
 
   #
-  # now generate one applyBson per object
+  # now generate one pull per object
   #
   for obj in dbObjReprs:
     objectName = obj.signature.name
     key = objectName
-    proc_map[key] =  "proc applyBson(obj: var $1, doc: Bson) {.used.} =\n".format(objectName)
+    proc_map[key] = ""
+    proc_map[key] &= "proc pull(obj: var $1, doc: Bson) {.used.} =\n".format(objectName)
     proc_map[key] &= "  if doc.kind != BsonKindDocument:\n"
     proc_map[key] &= "    return\n"
     #
@@ -853,10 +899,10 @@ proc genBsonToObject*(dbObjReprs: seq[ObjRepr]): string =
           skipCheck=false, fromSeq=false, fromOption=false
         )
       else:
-        if bsonObjectNamesRegistry.contains(typeName):
+        if bsonObjectNamesRegistry.contains(typeName) or blind:
           proc_map[key] &= "  if doc.contains(\"$1\"):\n".format(fieldName)
           proc_map[key] &= "    obj.$1 = $2()\n".format(fieldName, typeName)
-          proc_map[key] &= "    applyBson(obj.$1, doc[\"$1\"])\n".format(fieldName)
+          proc_map[key] &= "    pull(obj.$1, doc[\"$1\"])\n".format(fieldName)
   #
   # finish up all procedure strings
   #

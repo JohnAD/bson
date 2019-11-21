@@ -21,7 +21,7 @@ FieldRepr
           typ*: NimNode
 
 
-    source line: `48 <../src/bson/generators.nim#L48>`__
+    source line: `47 <../src/bson/generators.nim#L47>`__
 
     Object field representation: signature + type.
 
@@ -37,7 +37,7 @@ ObjRepr
           fields*: seq[FieldRepr]
 
 
-    source line: `54 <../src/bson/generators.nim#L54>`__
+    source line: `53 <../src/bson/generators.nim#L53>`__
 
     Object representation: signature + fields.
 
@@ -54,7 +54,7 @@ PragmaKind
 
     source line: `14 <../src/bson/generators.nim#L14>`__
 
-    There are two kinds of pragmas: flags and key-value pairs:
+    There are two kinds of pragmas: flags and key-value pairs
 
 
 .. _PragmaRepr.type:
@@ -70,7 +70,7 @@ PragmaRepr
           of pkKval: value*: NimNode
 
 
-    source line: `19 <../src/bson/generators.nim#L19>`__
+    source line: `18 <../src/bson/generators.nim#L18>`__
 
     A container for pragma definition components.
     For flag pragmas, only the pragma name is stored. For key-value pragmas,
@@ -89,7 +89,7 @@ SignatureRepr
           pragmas*: seq[PragmaRepr]
 
 
-    source line: `28 <../src/bson/generators.nim#L28>`__
+    source line: `27 <../src/bson/generators.nim#L27>`__
 
     Representation of the part of an object or field definition that contains:
       - name
@@ -121,13 +121,14 @@ genBsonToObject
 
     .. code:: nim
 
-        proc genBsonToObject*(dbObjReprs: seq[ObjRepr]): string =
+        proc genBsonToObject*(dbObjReprs: seq[ObjRepr], blind=false): string =
 
-    source line: `770 <../src/bson/generators.nim#L770>`__
+    source line: `814 <../src/bson/generators.nim#L814>`__
 
     this procedure generates new procedures that map values found in an
     existing "type" object to a Bson object.
     So, for example, with object defined as:
+    
     .. code:: nim
     
         type
@@ -142,12 +143,12 @@ genBsonToObject
     
     .. code:: nim
     
-        proc applyBson(obj: var Pet, doc: Bson) {.used.} =
+        proc pull(obj: var Pet, doc: Bson) {.used.} =
           discard
           if not doc["shortName"].isNil:
             if doc["shortName"].kind in @[BsonKindStringUTF8]:
               obj.shortName = doc["shortName"].toString
-        proc applyBson(obj: var User, doc: Bson) {.used.} =
+        proc pull(obj: var User, doc: Bson) {.used.} =
           discard
           if not doc["displayName"].isNil:
             if doc["displayName"].kind in @[BsonKindStringUTF8]:
@@ -159,7 +160,7 @@ genBsonToObject
               obj.weight = some doc["weight"].toFloat64
           if doc.contains("thePet"):
             obj.thePet = Pet()
-            applyBson(obj.thePet, doc["thePet"])
+            pull(obj.thePet, doc["thePet"])
 
 
 .. _genObjectToBson.p:
@@ -168,9 +169,9 @@ genObjectToBson
 
     .. code:: nim
 
-        proc genObjectToBson*(dbObjReprs: seq[ObjRepr]): string =
+        proc genObjectToBson*(dbObjReprs: seq[ObjRepr], blind=false): string =
 
-    source line: `363 <../src/bson/generators.nim#L363>`__
+    source line: `406 <../src/bson/generators.nim#L406>`__
 
     this procedure generates new procedures the convert the values in an
     existing "type" object to a BSON object.
@@ -190,17 +191,17 @@ genObjectToBson
     
     .. code:: nim
     
-        proc toBson(obj: Pet, force = false): Bson {.used.} =
+        proc toBson(obj: Pet): Bson {.used.} =
           result = newBsonDocument()
           result["shortName"] = toBson(obj.shortName)
-        proc toBson(obj: User, force = false): Bson {.used.} =
+        proc toBson(obj: User): Bson {.used.} =
           result = newBsonDocument()
           result["displayName"] = toBson(obj.displayName)
           if obj.weight.isNone:
             result["weight"] = null()
           else:
             result["weight"] = toBson(obj.weight.get())
-          result["thePet"] = toBson(obj.thePet, force)
+          result["thePet"] = toBson(obj.thePet)
 
 
 .. _listSubObjects.p:
@@ -211,10 +212,27 @@ listSubObjects
 
         proc listSubObjects*(obj: ObjRepr): seq[ObjRepr] =
 
-    source line: `221 <../src/bson/generators.nim#L221>`__
+    source line: `284 <../src/bson/generators.nim#L284>`__
 
     For any object, list any object in it fields (recursively) that
     have not yet been added to the compile-time registry.
+
+
+.. _toObjRepr.p:
+toObjRepr
+---------------------------------------------------------
+
+    .. code:: nim
+
+        proc toObjRepr*(typeDef: NimNode): ObjRepr =
+
+    source line: `181 <../src/bson/generators.nim#L181>`__
+
+    Convert an object type definition into an ``ObjRepr``.
+    
+    The "typeDef" is expected to represent a raw Type definition.
+    
+    Special thanks to https://github.com/moigagoo and his ``norm`` library
 
 
 .. _toVarObjRepr.p:
@@ -225,7 +243,7 @@ toVarObjRepr
 
         proc toVarObjRepr*(typeDef: NimNode, typeName: string): ObjRepr =
 
-    source line: `198 <../src/bson/generators.nim#L198>`__
+    source line: `199 <../src/bson/generators.nim#L199>`__
 
     Convert an object type definition into an ``ObjRepr``.
     
@@ -247,5 +265,4 @@ Table Of Contents
 
     A. `bson Reference <bson-ref.rst>`__
     B. `bson/marshal Reference <bson-marshal-ref.rst>`__
-    C. `bson/generators General Documentation <bson-generators-gen.rst>`__
-    D. `bson/generators Reference <bson-generators-ref.rst>`__
+    C. `bson/generators Reference <bson-generators-ref.rst>`__

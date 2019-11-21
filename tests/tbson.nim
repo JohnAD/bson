@@ -1,6 +1,6 @@
 import unittest
 
-import os, strutils, sequtils, times, oids, md5
+import times, oids, md5
 
 import bson
 

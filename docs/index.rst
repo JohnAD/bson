@@ -124,5 +124,4 @@ Table Of Contents
 
     A. `bson Reference <bson-ref.rst>`__
     B. `bson/marshal Reference <bson-marshal-ref.rst>`__
-    C. `bson/generators General Documentation <bson-generators-gen.rst>`__
-    D. `bson/generators Reference <bson-generators-ref.rst>`__
+    C. `bson/generators Reference <bson-generators-ref.rst>`__
