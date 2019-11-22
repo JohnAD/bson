@@ -110,7 +110,7 @@ Marshal
 
 There is a submodule called ``marshal``, that allows for the easy conversion
 of ``object`` types to/from BSON. It has a single macro: ``marshal`` which generates
-the a ``toBson`` and ``pull`` procedure for the object.
+``toBson`` and ``pull`` procedure for the object.
 
 An example:
 

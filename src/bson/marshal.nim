@@ -5,17 +5,22 @@ import algorithm
 
 
 macro marshal*(obj: typed, recurse=true): untyped =
-  ## This macro creates one or more pairs of procedures to easily for the object
-  ## type passed.
+  ## This macro creates one or more pairs of procedures to easily convert
+  ## the object type passed to/from BSON.
   ##
-  ## The pairs of new procedures are:
+  ## The pair of new procedures are:
   ##
-  ## *  ``pull(v: var T, doc: Bson) =``  *which converts Bson to Object*
-  ## *  ``toBson(v: T): Bson =``  *which converts Object to Bson*
+  ## *  ``pull(v: var T, doc: Bson)``
+  ## *  ``toBson(v: T): Bson``
   ##
-  ## Where T is the object (or object referenced by the object.)
+  ## Where T is the object type.
+  ##
+  ## An example:
   ##
   ## .. code:: nim
+  ##
+  ##     import bson
+  ##     import bson/marshal
   ##
   ##     type
   ##       Pet = object
@@ -44,13 +49,13 @@ macro marshal*(obj: typed, recurse=true): untyped =
   ##     let newBson = u.toBson
   ##     assert newBson["weight"] == 95.3
   ## 
-  ## By design, the procedures created are very forgiving. If field names or
+  ## By design, the procedures are created to be very forgiving. If field names or
   ## types don't match, in either the object or the BSON document, they are
   ## simply ignored.
   ##
   ## **DEALING WITH RECURSION**
   ##
-  ## By default, the ``recurse`` parameter is set to true. This means that the macro
+  ## By default, the ``recurse`` parameter is set to ``true``. This means that the macro
   ## will not only create the pair of procedures for the ``obj`` object type, it will
   ## also create them for any other objects that the ``obj``'s fields reference.
   ##
@@ -58,7 +63,7 @@ macro marshal*(obj: typed, recurse=true): untyped =
   ## accounted for.
   ##
   ## However, if the macro is called again on another object and that object *also*
-  ## reference an object already referenced by the first one, then you will likely
+  ## references an object already referenced by the first one, then you will likely
   ## get a ``Error: redefinition of 'pull'; previous declaration here``... error from the compiler.
   ## To avoid that, you might need to set "recurse=false" for some or all of the macro calls.
   ##
@@ -96,7 +101,7 @@ macro marshal*(obj: typed, recurse=true): untyped =
   ##
   ## also works. But note that ``marshal(Pet, recurse=false)`` was called first.
   ## The ``marshall(User, recurse=false)`` expects the procedures for ``Pet`` to already
-  ## be defined. Order matters a great deal.  
+  ## be defined. Order matters a great deal.
   result = newStmtList()
   #
   let typeDef = getImpl(obj)
