@@ -9,5 +9,5 @@
   "rst_dir": "rst/",
   "doc_src_dir": "",
   "nimble_file": "bson.nimble",
-  "files_to_ignore": []
+  "files_to_ignore": ["src/bson/generators.nim"]
 }

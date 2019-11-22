@@ -1,6 +1,6 @@
 Introduction to bson
 ==============================================================================
-ver 1.0.0
+ver 1.0.1
 
 BSON
 
@@ -84,14 +84,14 @@ Not all of them are fully supported by the libary yet.
 BSON                            Nim Equiv         Notes
 =============================== ================= ===========================
 64-bit binary floating point    float             Nim defaults to 64 bit
-UTF-8 string                    string
+UTF-8 string                    string            Nim strings are UTF-8 ready by default
 Embedded document               newBsonDocument   from this library. for key/value pairs, the key must always be a string
-Array                           newBsonArray      actually a list, not an array. You can mix types.
-Binary data                     string (binary)   not printable, but works
-ObjectId                        Oid               std "oids" library
+Array                           newBsonArray      technically a list, not an array, because you can mix types
+Binary data                     string (binary)   not always printable, but works, see ``binstr``
+ObjectId                        Oid               from standard `oids library <https://nim-lang.org/docs/oids.html>`_
 Boolean "false"                 bool = false
 Boolean "true"                  bool = true
-UTC datetime                    Time              std "times" library
+UTC datetime                    Time              from standard `times library <https://nim-lang.org/docs/times.html>`_
 Null value                      null              from this library
 Regular expression              regex()           from this library
 DBPointer (deprecated)          dbref()           from this library
@@ -104,6 +104,37 @@ Timestamp                       BsonTimestamp     from this library
 Min key
 Max key
 =============================== ================= ===========================
+
+Marshal
+=======
+
+There is a submodule called ``marshal``, that allows for the easy conversion
+of ``object`` types to/from BSON. It has a single macro: ``marshal`` which generates
+the a ``toBson`` and ``pull`` procedure for the object.
+
+An example:
+
+.. code:: nim
+
+    import bson
+    import bson/marshal
+
+    type
+      User = object
+        name: string
+        height: Option[float]
+
+    marshal(User)
+
+    var u = User()
+
+    var someBson = @@{"name": "Bob", "height": 95.3}
+
+    u.pull(someBson)
+
+    assert u.name == "Bob"
+
+See the *bson/marshal Reference* link in the Table of Contents below for more detail.
 
 Credit
 ======
@@ -124,4 +155,3 @@ Table Of Contents
 
     A. `bson Reference <bson-ref.rst>`__
     B. `bson/marshal Reference <bson-marshal-ref.rst>`__
-    C. `bson/generators Reference <bson-generators-ref.rst>`__
