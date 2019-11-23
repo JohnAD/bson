@@ -21,7 +21,7 @@ let expected_bdoc = """{
     "someRef" : {"$ref": "col", "$id": "5d6c66e4a0dc75753703ff48", "$db": "db"},
     "userDefined" : {"$bindata": "c29tZS1iaW5hcnktZGF0YQ=="},
     "someTimestamp" : {"$timestamp": 4294967297},
-    "utcTime" : 2019-09-01T14:48:36-05:00,
+    "utcTime" : """ & $parseTime("2019-09-01T19:48:36", "yyyy-MM-dd\'T\'HH:mm:ss", utc()) & """,
     "subdoc" : {
         "salary" : 500
     },
