@@ -124,3 +124,9 @@ suite "Basic BSON":
     update(a, b)
 
     check $a == expected_out
+
+  test "time to bson to time":
+    let bdoc = @@{"d": parseTime("2019-09-01T19:48:36.123", "yyyy-MM-dd\'T\'HH:mm:ss'.'fff", utc())}
+    check bdoc["d"].toTime.nanosecond == 123000000
+    let bdoc2 = newBsonDocument(bdoc.bytes)
+    check bdoc2["d"].toTime.nanosecond == 123000000
