@@ -528,6 +528,13 @@ proc `[]=`*(bs: Bson, key: string, value: bool) =  #!GROUP=`[]=`
 # Time
 #
 
+proc fromMilliseconds*(since1970: int64): Time =
+  # Convert number of milliseconds from Unix epoch to Time
+  initTime(since1970 div 1000, since1970 mod 1000 * 1000000)
+
+proc toMilliseconds*(t: Time): int64 =
+  t.toUnix * 1000 + t.nanosecond div 1000000
+
 proc toBson*(x: Time): Bson =  #!GROUP=toBson
   # Convert Time to Bson object
   return Bson(kind: BsonKindTimeUTC, valueTime: x)
@@ -658,7 +665,7 @@ proc toBytes(bs: Bson, res: var string) =
   of BsonKindBool:
       boolToBytes(bs.valueBool, res)
   of BsonKindTimeUTC:
-      int64ToBytes(int64(bs.valueTime.toUnix() * 1000), res)
+      int64ToBytes(bs.valueTime.toMilliseconds, res)
   of BsonKindNull:
       discard
   of BsonKindRegexp:
@@ -1054,7 +1061,7 @@ proc newBsonDocument*(s: Stream): Bson =
       of BsonKindBool:
           sub[] = if s.readChar() == 0.char: false.toBson() else: true.toBson()
       of BsonKindTimeUTC:
-          let timeUTC: Bson = Bson(kind: BsonKindTimeUTC, valueTime: fromUnix((s.readInt64().float64 / 1000).int64))
+          let timeUTC: Bson = Bson(kind: BsonKindTimeUTC, valueTime: fromMilliseconds(s.readInt64()))
           sub[] = timeUTC
       of BsonKindNull:
           sub[] = null()
