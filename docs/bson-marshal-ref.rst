@@ -22,7 +22,7 @@ marshal
 
         macro marshal*(obj: typed, recurse=true): untyped =
 
-    source line: `7 <../src/bson/marshal.nim#L7>`__
+    source line: `6 <../src/bson/marshal.nim#L6>`__
 
     This macro creates one or more pairs of procedures to easily convert
     the object type passed to/from BSON.

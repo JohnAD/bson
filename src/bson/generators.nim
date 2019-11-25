@@ -506,7 +506,7 @@ proc genBsonToBasic(
     result &= t & "if $1.kind in @[$2]:\n".format(src, nimTypeToBsonKind[typeName])
     result &= t & "  $1$2 $3.$4\n".format(fieldName, assignment, src, nimTypeToBsonProc[typeName])
   else:
-    result &= t & "if not $1.isNil:\n".format(src)
+    result &= t & "if $1.notNull:\n".format(src)
     result &= t & "  if $1.kind in @[$2]:\n".format(src, nimTypeToBsonKind[typeName])
     result &= t & "    $1$2 $3.$4\n".format(fieldName, assignment, src, nimTypeToBsonProc[typeName])
 
@@ -880,29 +880,29 @@ proc genBsonToObject*(dbObjReprs: seq[ObjRepr], blind=false): string =
           bsonFieldName = $p.value
       if typeName in bsonBasicTypeList:
         proc_map[key] &= genBsonToBasic(
-          "doc[\"$1\"]".format(bsonFieldName), "obj.$1".format(fieldName), typeName, 2,
+          "doc{\"$1\"}".format(bsonFieldName), "obj.$1".format(fieldName), typeName, 2,
           skipCheck=false, fromSeq=false, fromOption=false
         )
       elif typeName=="seq":
         proc_map[key] &= genBsonToSeq(
-          "doc[\"$1\"]".format(bsonFieldName), "obj.$1".format(fieldName), tseq, 2,
+          "doc{\"$1\"}".format(bsonFieldName), "obj.$1".format(fieldName), tseq, 2,
           skipCheck=false, fromSeq=false, fromOption=false
         )
       elif typeName=="Option":
         proc_map[key] &= genBsonToOption(
-          "doc[\"$1\"]".format(bsonFieldName), "obj.$1".format(fieldName), tseq, 2,
+          "doc{\"$1\"}".format(bsonFieldName), "obj.$1".format(fieldName), tseq, 2,
           skipCheck=false, fromSeq=false, fromOption=false
         )
       elif typeName=="N":
         proc_map[key] &= genBsonToN(
-          "doc[\"$1\"]".format(bsonFieldName), "obj.$1".format(fieldName), tseq, 2,
+          "doc{\"$1\"}".format(bsonFieldName), "obj.$1".format(fieldName), tseq, 2,
           skipCheck=false, fromSeq=false, fromOption=false
         )
       else:
         if bsonObjectNamesRegistry.contains(typeName) or blind:
           proc_map[key] &= "  if doc.contains(\"$1\"):\n".format(fieldName)
           proc_map[key] &= "    obj.$1 = $2()\n".format(fieldName, typeName)
-          proc_map[key] &= "    pull(obj.$1, doc[\"$1\"])\n".format(fieldName)
+          proc_map[key] &= "    pull(obj.$1, doc{\"$1\"})\n".format(fieldName)
   #
   # finish up all procedure strings
   #

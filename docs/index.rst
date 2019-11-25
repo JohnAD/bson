@@ -1,6 +1,6 @@
 Introduction to bson
 ==============================================================================
-ver 1.0.1
+ver 1.1.0
 
 BSON
 
@@ -53,6 +53,35 @@ documents (with `newBsonDocument`):
     doc["schedule"]["8am"] = "go to work"
     doc["schedule"]["11am"] = "see dentist"
 
+READING A BSON DOCUMENT
+-----------------------
+
+To read a BSON document, you can reference the field by string in either
+traditional square brackets (``[]``) or the forgiving curly brackets (``{}``).
+
+.. code:: nim
+
+    var doc = @@{
+      "name": "Joe",
+      "address": {"city": "New Orleans", "state": "LA"},
+      "pots": [9, 22, 16]
+    }
+
+    let personName = doc["name"]                 # set to "Joe"
+    let personState = doc["address"]["state"]    # set to "LA"
+    let secondPot = doc["pots"][1]               # set to 22
+
+When using square brackets, if the key is missing a runtime error is generated.
+But when using curly brackets, a missing key simply results in a ``null``.
+And, the keys can be separated by commas to easily transverse down the tree.
+
+.. code:: nim
+
+    let personCity = doc{"address", "city"}      # set to "New Orleans"
+    let personCode = doc{"address", "postal"}    # set to null
+    let thirdPot = doc{"pots", "2"}              # set to 16
+    let fourthPot = doc{"pots", "3"}             # set to null
+
 GENERATING THE BSON CODE
 ------------------------
 
@@ -98,7 +127,7 @@ DBPointer (deprecated)          dbref()           from this library
 JavaScript code                 js()              from this library
 JavaScript code w/ scope
 32-bit integer                  int32
-Timestamp                       BsonTimestamp     from this library
+Timestamp                       BsonTimestamp     from this library. Do not use to store dates or time. Meant for internal use by MongoDb only.
 64-bit integer                  int64
 128-bit decimal floating point                    would like to support !
 Min key

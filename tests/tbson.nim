@@ -109,24 +109,117 @@ suite "Basic BSON":
     check mdoc == expected_mdoc
 
   test "merge and update":
-    const expected_out = """{
+    const merge_expected_out = """{
     "name" : "Joe",
     "age" : 42,
     "weight" : 52,
     "feet" : 2
 }"""
-    let a = @@{"name": "Joe", "age": 42, "weight": 50 }
+    const pull_expected_out = """{
+    "name" : "Joe",
+    "age" : 42,
+    "weight" : 52
+}"""
+    var a = @@{"name": "Joe", "age": 42, "weight": 50 }
     let b = @@{"name": "Joe", "feet": 2, "weight": 52 }
     let both = a.merge(b)
     
-    check $both == expected_out
+    check $both == merge_expected_out
 
-    update(a, b)
+    pull(a, b)
 
-    check $a == expected_out
+    check $a == pull_expected_out
+
+    var aa = @@{"abc": 4, "xyz": {"foo": "bar", "zip": [10, 11, 12, 13]}}
+    let bb = @@{"abc": 2, "xyz": {"foo": "tada", "j": "u"}}
+    let cc = @@{"abc": "hello"}
+    let dd = @@{"zip": [0.1, 0.2, 0.3]}
+
+    aa.pull(bb)
+    assert aa["abc"] == 2
+    assert aa["xyz"]["foo"] == "tada"
+    assert aa{"xyz", "j"}.isNull       # "j" is not set because it is not found in ``a``
+    assert aa["xyz"]["zip"].len == 4   # "zip" is left alone
+
+    aa.pull(cc)
+    assert aa["abc"] == "hello"
+
+    var sub = aa["xyz"]
+    sub.pull(dd)
+    aa["xzy"] = sub
+    assert aa["xyz"]["foo"] == "tada"
+    assert aa["xyz"]["zip"][0] == 0.1
+    assert aa["xyz"]["zip"][1] == 0.2
+    assert aa["xyz"]["zip"][2] == 0.3
+    assert aa["xyz"]["zip"][3] == 13
 
   test "time to bson to time":
     let bdoc = @@{"d": parseTime("2019-09-01T19:48:36.123", "yyyy-MM-dd\'T\'HH:mm:ss'.'fff", utc())}
     check bdoc["d"].toTime.nanosecond == 123000000
     let bdoc2 = newBsonDocument(bdoc.bytes)
     check bdoc2["d"].toTime.nanosecond == 123000000
+
+  test "test safe `{}` functions":
+
+    let myDoc = @@{"abc": 4, "xyz": {"foo": "bar", "zip": [10, 11, 12, 13]}}
+  
+    check myDoc{"abc"} == 4
+    check myDoc{"missing"}.kind == BsonKindNull
+    check myDoc{"xyz", "foo"} == "bar"
+    check myDoc{"xyz", "zip", "2"} == 12
+    check myDoc{"xyz", "zip", "19"}.isNull
+
+    myDoc{"abc"} = toBson(5)
+    myDoc{"xyz", "foo"} = toBson("BAR2")
+    myDoc{"def", "ghi"} = toBson(99.2)
+    myDoc{"xyz", "zip", "2"} = toBson(112)
+
+    check myDoc["abc"] == 5
+    check myDoc["xyz"]["foo"] == "BAR2"
+    check myDoc["def"]["ghi"] == 99.2
+    check myDoc["xyz"]["zip"][2] == 112
+
+    myDoc{"abc"} = 6
+    myDoc{"xyz", "foo"} = "BAR3"
+    myDoc{"def", "ghi"} = 199.9
+    myDoc{"xyz", "zip", "2"} = true  # BSON arrays can mix types!
+
+    check myDoc["abc"] == 6
+    check myDoc["xyz"]["foo"] == "BAR3"
+    check myDoc["def"]["ghi"] == 199.9
+    check myDoc["xyz"]["zip"][2] == true
+
+  test "iterators":
+
+    let myDoc = @@{"abc": 4, "xyz": {"foo": "bar", "zip": [10, 11, 12, 13]}}
+
+    var fldList: seq[string]
+    for f in myDoc.fields():
+      fldList.add f
+
+    check fldList[0] == "abc"
+    check fldList[1] == "xyz"
+
+    var itemList: seq[Bson]
+    for itm in myDoc.items():
+      itemList.add itm
+
+    check itemList[0] == 4
+    check itemList[1].kind == BsonKindDocument
+
+    fldList = @[]
+    itemList = @[]
+    for k, v in myDoc.pairs():
+      fldList.add k
+      itemList.add v
+
+    check fldList[0] == "abc"
+    check fldList[1] == "xyz"
+    check itemList[0] == 4
+    check itemList[1].kind == BsonKindDocument
+    
+    var sum = 0
+    for x in myDoc["xyz"]["zip"].items():
+      sum += x
+
+    check sum == 10 + 11 + 12 + 13
