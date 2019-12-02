@@ -1125,8 +1125,10 @@ iterator pairs*(bs: Bson): tuple[key: string, val: Bson] =
   ##
   ## Each call returns one (key, value) tuple.
   if bs.kind == BsonKindDocument:
-      for k, v in bs.valueDocument:
-          yield (k, v)
+    for k, v in bs.valueDocument:
+      yield (k, v)
+  else:
+    raiseWrongNodeException(bs)
 
 
 proc contains*(bs: Bson, key: string): bool =
