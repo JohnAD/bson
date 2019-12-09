@@ -223,3 +223,7 @@ suite "Basic BSON":
       sum += x
 
     check sum == 10 + 11 + 12 + 13
+
+    expect Exception:
+      for k, v in myDoc["xyz"]["zip"].pairs():
+        discard
