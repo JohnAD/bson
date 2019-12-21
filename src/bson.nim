@@ -171,7 +171,6 @@
 ## internal implementation of BSON.
 
 
-
 import base64
 import macros
 import md5
@@ -180,6 +179,7 @@ import streams
 import strutils
 import times
 import tables
+
 
 type BsonKind* = char
 
@@ -216,20 +216,6 @@ const
   BsonSubtypeUuid*         = 0x04.BsonSubtype  ##
   BsonSubtypeMd5*          = 0x05.BsonSubtype  ##
   BsonSubtypeUserDefined*  = 0x80.BsonSubtype  ##
-
-converter toChar*(bk: BsonKind): char =
-  ## Convert BsonKind to char
-  return bk.char
-
-converter toChar*(sub: BsonSubtype): char =
-  ## Convert BsonSubtype to char
-  return sub.char
-
-converter toBsonKind*(c: char): BsonKind =
-  ## Convert char to BsonKind
-  return c.BsonKind
-
-# ------------- type: Bson -----------------------#
 
 type
   BsonTimestamp* = object ## Internal MongoDB type used by mongos instances
@@ -280,88 +266,68 @@ proc raiseWrongNodeException(bs: Bson) =
   raise newException(Exception, "Wrong node kind: " & $ord(bs.kind))
 
 
+iterator items*(bs: Bson): Bson =
+  ## Iterate over BSON document's values or an array's items.
+  ##
+  ## If ``bs`` is not a document or array, an exception is thrown.
+  ##
+  ## Each call returns one BSON item/value.
+  case bs.kind:
+  of BsonKindDocument:
+    for _, v in bs.valueDocument:
+      yield v
+  of BsonKindArray:
+    for item in bs.valueArray:
+      yield item
+  else:
+    raiseWrongNodeException(bs)
+
+
+iterator fields*(bs: Bson): string =
+  ## Iterate over BSON document's child field name(s).
+  ##
+  ## If the ``bs`` object is not a document, an exception is thrown.
+  ##
+  ## Each call returns one BSON field.
+  case bs.kind:
+  of BsonKindDocument:
+    for k, _ in bs.valueDocument:
+      yield k
+  else:
+    raiseWrongNodeException(bs)
+
+
+iterator pairs*(bs: Bson): tuple[key: string, val: Bson] =
+  ## Iterate over BSON document's children.
+  ##
+  ## Each call returns one (key, value) tuple.
+  if bs.kind == BsonKindDocument:
+      for k, v in bs.valueDocument:
+          yield (k, v)
+
+
+converter toChar*(bk: BsonKind): char =
+  ## Convert BsonKind to char
+  return bk.char
+
+converter toChar*(sub: BsonSubtype): char =
+  ## Convert BsonSubtype to char
+  return sub.char
+
+converter toBsonKind*(c: char): BsonKind =
+  ## Convert char to BsonKind
+  return c.BsonKind
+
+
+proc genExtendedJson(bson: Bson, indent: int, tab: int, canonical=true): string  # fwd ref
+
+
 proc `$`*(bs: Bson): string =
   ## Serialize the ``bs`` Bson object into a human readable string.
   ##
-  ## While the generated string is visually similar to JSON, it is NOT an
-  ## accurate rendition of JSON. It is instead simply a convenient reference
-  ## mostly used for diagnostics.
-  proc stringify(bs: Bson, indent: string): string =
-      if bs.isNil: return "null"
-      case bs.kind
-      of BsonKindDouble:
-          return $bs.valueFloat64
-      of BsonKindStringUTF8:
-          return "\"" & bs.valueString & "\""
-      of BsonKindDocument:
-          var res = "{\n"
-          let ln = bs.valueDocument.len
-          var i = 0
-          let newIndent = indent & "    "
-          for k, v in bs.valueDocument:
-              res &= newIndent
-              res &= "\"" & k & "\" : "
-              res &= stringify(v, newIndent)
-              if i != ln - 1:
-                  res &= ","
-              inc i
-              res &= "\n"
-          res &= indent & "}"
-          return res
-      of BsonKindArray:
-          var res = "[\n"
-          let newIndent = indent & "    "
-          for i, v in bs.valueArray:
-              res &= newIndent
-              res &= stringify(v, newIndent)
-              if i != bs.valueArray.len - 1:
-                  res &= ","
-              res &= "\n"
-          res &= indent & "]"
-          return res
-      of BsonKindBinary:
-          case bs.subtype
-          of BsonSubtypeMd5:
-              return "{\"$$md5\": \"$#\"}" % [$bs.valueDigest]
-          of BsonSubtypeGeneric:
-              return "{\"$$bindata\": \"$#\"}" % [base64.encode(bs.valueGeneric)]
-          of BsonSubtypeUserDefined:
-              return "{\"$$bindata\": \"$#\"}" % [base64.encode(bs.valueUserDefined)]
-          else:
-              raiseWrongNodeException(bs)
-      of BsonKindUndefined:
-          return "undefined"
-      of BsonKindOid:
-          return "{\"$$oid\": \"$#\"}" % [$bs.valueOid]
-      of BsonKindBool:
-          return if bs.valueBool == true: "true" else: "false"
-      of BsonKindTimeUTC:
-          return $bs.valueTime
-      of BsonKindNull:
-          return "null"
-      of BsonKindRegexp:
-          return "{\"$$regex\": \"$#\", \"$$options\": \"$#\"}" % [bs.regex, bs.options]
-      of BsonKindDBPointer:
-          let
-            refcol = bs.refCol.split(".")[1]
-            refdb  = bs.refCol.split(".")[0]
-          return "{\"$$ref\": \"$#\", \"$$id\": \"$#\", \"$$db\": \"$#\"}" % [refcol, $bs.refOid, refdb]
-      of BsonKindJSCode:
-          return bs.valueCode ## TODO: make valid JSON here
-      of BsonKindInt32:
-          return $bs.valueInt32
-      of BsonKindTimestamp:
-          return "{\"$$timestamp\": $#}" % [$(cast[ptr int64](addr bs.valueTimestamp)[])]
-      of BSonKindInt64:
-          return $bs.valueInt64
-      of BsonKindMinimumKey:
-          return "{\"$$minkey\": 1}"
-      of BsonKindMaximumKey:
-          return "{\"$$maxkey\": 1}"
-      else:
-          raiseWrongNodeException(bs)
-  return stringify(bs, "")
-
+  ## This generates a canonical Extended Json string that is given two-space
+  ## indentation.
+  result = genExtendedJson(bs, 0, 2, true)
 
 # #############################
 #
@@ -442,7 +408,7 @@ proc `[]=`*(bs: Bson, key: string, value: Oid) =
   ## If setting an ``Oid`` and the Object ID is all-zeroes ("000000000000000000000000"), then
   ## a null field is stored rather than an Object ID value
   ##
-  ## If the field does ot exist, an exception is raised.
+  ## If the field does not exist, an exception is raised.
   ##
   ## Returns a Bson object.
   if bs.kind == BsonKindDocument:
@@ -865,7 +831,7 @@ template toBson*(b: Bson): Bson = b
   ## Having this template helps catch border cases internally; especially with macros.
 
 
-proc toBson*(x: NimNode): NimNode {.compileTime.} =
+proc toBson(x: NimNode): NimNode {.compileTime.} =
   # Convert NimNode into BSON document
 
   case x.kind
@@ -889,6 +855,14 @@ proc toBson*(x: NimNode): NimNode {.compileTime.} =
 
   else:
     result = newCall("toBson", x)
+
+
+proc toJsonStr*(b: Bson): string =
+  result = genExtendedJson(b, 0, 0, canonical=true)
+
+
+proc pretty*(b: Bson, tab=4, canonical=false): string =
+  result = genExtendedJson(b, 0, tab, canonical)
 
 
 macro `@@`*(x: untyped): Bson =
@@ -986,9 +960,12 @@ proc bin*(bindata: string): Bson =
   )
 
 proc binstr*(x: Bson): string =
-  ## Generate a "binary string" equivalent of the BSON "Generic Binary" field type.
+  ## Generate a "binary string" equivalent of the BSON contents. This is really
+  ## meant for use with the "Generic Binary" field type.
   ##
-  ## This is used strictly for that field type. If you are wanting to 
+  ## If the binary subtype is MD5, then the string equivalent of the digest is returned.
+  ##
+  ## If you are wanting to 
   ## convert a BSON object into it's true binary form, use ``bytes`` instead.
   if x.kind == BsonKindBinary:
     case x.subtype:
@@ -998,6 +975,7 @@ proc binstr*(x: Bson): string =
     of BsonSubtypeUuidOld:     return x.valueUuidOld
     of BsonSubtypeUuid:        return x.valueUuid
     of BsonSubtypeUserDefined: return x.valueUserDefined
+    of BsonSubtypeMd5:         return $x.valueDigest
     else:
       raiseWrongNodeException(x)      
   else:
@@ -1089,44 +1067,6 @@ proc delete*(bs: Bson, idx: int) =  #!GROUP=del
     raiseWrongNodeException(bs)
 
 
-iterator items*(bs: Bson): Bson =
-  ## Iterate over BSON document's values or an array's items.
-  ##
-  ## If ``bs`` is not a document or array, an exception is thrown.
-  ##
-  ## Each call returns one BSON item/value.
-  case bs.kind:
-  of BsonKindDocument:
-    for _, v in bs.valueDocument:
-      yield v
-  of BsonKindArray:
-    for item in bs.valueArray:
-      yield item
-  else:
-    raiseWrongNodeException(bs)
-
-
-iterator fields*(bs: Bson): string =
-  ## Iterate over BSON document's field name(s).
-  ##
-  ## If the ``bs`` object is not a document, an exception is thrown.
-  ##
-  ## Each call returns one BSON field.
-  case bs.kind:
-  of BsonKindDocument:
-    for k, _ in bs.valueDocument:
-      yield k
-  else:
-    raiseWrongNodeException(bs)
-
-
-iterator pairs*(bs: Bson): tuple[key: string, val: Bson] =
-  ## Iterate over BSON object's fields
-  ##
-  ## Each call returns one (key, value) tuple.
-  if bs.kind == BsonKindDocument:
-      for k, v in bs.valueDocument:
-          yield (k, v)
 
 
 proc contains*(bs: Bson, key: string): bool =
@@ -1284,7 +1224,7 @@ proc merge*(a, b: Bson): Bson =
   ##         "feet" : 2
   ##     }
   ##
-  ## Also see the related procedure called ``update(a, b)``.
+  ## Also see the related procedure called ``pull(a, b)``.
   ##
   ## Returns a combined BSON document object.
 
@@ -1349,7 +1289,9 @@ proc pull*(a: var Bson, b: Bson)=
   ##     a.pull(c)
   ##     assert a["abc"] == "hello"
   ##
-  ##     a["xyz"].pull(d)
+  ##     var sub = a["xyz"]
+  ##     sub.pull(d)
+  ##     a["xyz"] = sub
   ##     assert a["xyz"]["zip"][0] == 0.1
   ##     assert a["xyz"]["zip"][1] == 0.2
   ##     assert a["xyz"]["zip"][2] == 0.3
@@ -1554,3 +1496,244 @@ proc `{}=`*[T](bs: Bson, keys: varargs[string], value: T) =
   ##     assert myDoc["xyz"]["zip"][2] == 112
   ##
   `{}=`(bs, keys, toBson(value))
+
+
+# ####################
+
+
+import json
+import parseutils
+import base64
+
+
+const
+  iso8601DateFormat = initTimeFormat("yyyy-MM-dd")
+  iso8601NaiveFormat = initTimeFormat("yyyy-MM-dd'T'HH:mm:ss")
+  iso8601Format = initTimeFormat("yyyy-MM-dd'T'HH:mm:sszzz")
+  iso8601MillisecondFormat = initTimeFormat("yyyy-MM-dd'T'HH:mm:ss'.'fffzzz")
+
+
+func fromMilliseconds(since1970: int64): Time =
+  initTime(since1970 div 1000, since1970 mod 1000 * 1000000)
+
+
+func toIso8601(dt: DateTime): string =
+  dt.format(if dt.nanosecond div 1000000 mod 1000 != 0: iso8601MillisecondFormat else: iso8601Format)
+
+
+proc toIso8601(t: Time): string =
+  t.utc.toIso8601
+
+
+func isNaN*(x: float): bool {.importc: "isnan", header: "<math.h>".}
+
+
+func parseFloat64(s: string): float64 {.gcsafe, raises: [ValueError].} =
+  var parsedValue: BiggestFloat
+  if s.len == 0 or parseBiggestFloat(s, parsedValue, 0) != s.len:
+    raise newException(ValueError, "invalid float64: " & s)
+  result = parsedValue.float64
+
+
+proc toExtJsonString(t: Time): string =
+  let dt = t.utc
+  if 1970 <= dt.year and dt.year <= 9999:
+    "\"$1\"".format(dt.toIso8601)
+  else:
+    "{$$numberLong: \"$1\"}".format($t.toMilliseconds)
+
+
+proc genExtendedJson(bson: Bson, indent: int, tab: int, canonical=true): string =
+  #
+  # if not "pretty", both indent and tab are zero
+
+  let indentSp = "" & " ".repeat(indent)
+  let tabSp = "" & " ".repeat(tab)
+  var eol = ""
+  var sp = ""
+  let quote = "\""
+  if tab > 0:
+    eol = "\n"
+    sp = " "
+
+  result = ""  # we ALWAYS assume we are in the right starting place.
+
+  case bson.kind
+  of BsonKindArray:
+    var allItems: seq[string] = @[]
+    result &= "[" & eol
+    for value in bson.items:
+      allItems.add indentSp & tabSp & genExtendedJson(value, indent+tab, tab, canonical)
+    result &= allItems.join("," & eol)
+    result &= eol
+    result &= indentSp & "]"
+  of BsonKindDocument:
+    result &= "{" & eol
+    var allItems: seq[string] = @[]
+    for name, value in bson.pairs:
+      var line = indentSp & tabSp
+      line &= name.escapeJson
+      line &= ":" & sp
+      line &= genExtendedJson(value, indent + tab, tab, canonical)
+      allItems.add line
+    result &= allItems.join("," & eol)
+    result &= eol
+    result &= indentSp & "}"
+  of BsonKindUnknown:
+    assert false, "should not happen"
+  of BsonKindDouble:
+    let x: float64 = bson.valueFloat64
+    if x.isNaN:
+      result &= "{" 
+      result &= quote & "$numberDouble" & quote & ":" & sp & quote & "NaN" & quote
+      result &= "}"
+    elif x == Inf:
+      result &= "{"
+      result &= quote & "$numberDouble" & quote & ":" & sp & quote & "Infinity" & quote & eol
+      result &= "}"
+    elif x == -Inf:
+      result &= "{"
+      result &= quote & "$numberDouble" & quote & ":" & sp & quote & "-Infinity" & quote & eol
+      result &= "}"
+    elif canonical:
+      result &= "{"
+      result &= quote & "$numberDouble" & quote & ":" & sp & quote
+      result &= $x
+      result &= quote & "}"
+    else:
+      result &= $x
+  of BsonKindStringUTF8:
+    result &= escapeJson(bson.toString)
+  of BsonKindBinary:
+    result &= "{" & eol
+    result &= indentSp & tabSp & quote & "$binary" & quote & ":" & sp & "{" & eol
+    result &= indentSp & tabSp & tabSp & quote & "base64" & quote & ":" & sp & quote
+    result &= encode(bson.binstr)
+    result &= quote & "," & eol
+    result &= indentSp & tabSp & tabSp & quote & "subtype" & quote & ":" & sp & quote
+    case bson.subtype:
+    of BsonSubtypeGeneric:
+      result &= "00"
+    of BsonSubtypeFunction:
+      result &= "01"
+    of BsonSubtypeBinaryOld:
+      result &= "02"
+    of BsonSubtypeUuidOld:
+      result &= "03"
+    of BsonSubtypeUuid:
+      result &= "04"
+    of BsonSubtypeMd5:
+      result &= "05"
+    of BsonSubtypeUserDefined:
+      result &= "80"
+    else:
+      result &= "80"
+    result &= quote & eol
+    result &= indentSp & tabSp & "}" & eol
+    result &= indentSp & "}"
+  of BsonKindOid:
+    result &= "{"
+    result &= quote & "$oid" & quote & ":" & sp & quote
+    result &= $bson.toOid
+    result &= quote
+    result &= "}"
+  of BsonKindUndefined:
+    result &= "{" & quote & "$undefined" & quote & ":" & sp & "true" & "}"
+  of BsonKindBool:
+    if bson.toBool:
+      result &= "true"
+    else:
+      result &= "false"
+  of BsonKindTimeUTC:
+    if canonical:
+      result &= "{" & quote & "$date" & quote & ":" & sp & "{"
+      result &= quote & "$numberLong" & quote & ":" & sp & quote
+      result &= $bson.toTime.toMilliseconds
+      result &= quote & "}}"
+    else:
+      result &= "{" & quote & "$date" & quote & ":" & sp
+      result &= bson.toTime.toExtJsonString
+      result &= "}"
+  of BsonKindNull:
+    result &= "null"
+  of BsonKindRegexp:
+    result &= "{"
+    result &= quote & "$regularExpression" & quote & ":" & eol
+    result &= indentSp & tabSp & "{" & eol
+    result &= indentSp & tabSp & tabSp & quote & "pattern" & quote & ":" & sp
+    let parts = bson.bytes.split(char(0))
+    result &= escapeJson(parts[0]) & "," & eol
+    result &= indentSp & tabSp & tabSp & quote & "options" & quote & ":" & sp
+    result &= escapeJson(parts[1]) & eol
+    result &= indentSp & tabSp & "}" & eol
+    result &= indentSp & "}"
+  of BsonKindDBPointer:
+    result &= "{\"$dbPointer\":{\"$ref\":\""
+    let s = newStringStream(bson.bytes)
+    discard s.readInt32
+    result &= s.readLine
+    result &= "\",\"$id\":{\"$oid\":\""
+    let valueLo = s.readInt64
+    let valueHi = s.readInt32
+    result &= valueHi.toHex
+    result &= valueLo.toHex
+    result &= "\"}}}"
+  of BsonKindJSCode:
+    result &= "{\"$code\":"
+    let s = newStringStream(bson.bytes)
+    var buffer: string
+    s.readStr(s.readInt32() - 1, buffer)
+    result &= escapeJson(buffer)
+    result &= "}"
+  of BsonKindDeprecated:
+    result &= "\"$symbol\":"
+    let s = newStringStream(bson.bytes)
+    var buffer: string
+    s.readStr(s.readInt32() - 1, buffer)
+    result &= escapeJson(buffer)
+    result &= "}"
+  of BsonKindJSCodeWithScope:
+    result &= "{\"$code\":"
+    let s = newStringStream(bson.bytes)
+    var buffer: string
+    s.readStr(s.readInt32() - 1, buffer)
+    discard s.readChar
+    result &= escapeJson(buffer)
+    result &= ",\"$scope\":"
+    result &= genExtendedJson(newBsonDocument(s), indent+tab, tab, canonical)
+    result &= "}"
+  of BsonKindInt32:
+    if canonical:
+      result &= "{"
+      result &= quote & "$numberInt" & quote & ":" & sp & quote
+      result &= $bson.toInt32
+      result &= quote
+      result &= "}"
+    else:
+      result &= $bson.toInt32
+  of BsonKindTimestamp:
+    let ts: BsonTimestamp = bson
+    result &= "{"
+    result &= quote & "$timestamp" & quote & ":" & sp & "{"
+    result &= quote & "t" & quote & ":" & sp
+    result &= $ts.timestamp
+    result &= ","
+    result &= quote & "i" & quote & ":" & sp
+    result &= $ts.increment
+    result &= "}}"
+  of BsonKindInt64:
+    if canonical:
+      result &= "{" 
+      result &= quote & "$numberLong" & quote & ":" & sp & quote
+      result &= $bson.toInt64
+      result &= quote
+      result &= "}"
+    else:
+      result &= $bson.toInt64
+  of BsonKindMinimumKey:
+    result &= "{" & quote & "$minKey" & quote & sp & ":1}"
+  of BsonKindMaximumKey:
+    result &= "{" & quote & "$maxKey" & quote & sp & ":1}"
+  else:
+    assert false, bson.kind.uint8.toHex & ": unknown bson type"
+

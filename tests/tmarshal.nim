@@ -94,23 +94,23 @@ suite "BSON Marshaling":
     let newDoc = bd.toBson
 
     check $newDoc == """{
-    "name" : "abc",
-    "balance" : 99.90000000000001,
-    "someId" : {"$oid": "5d6c66e4a0dc75753703ff48"},
-    "someTrue" : false,
-    "someNull" : null,
-    "someInt" : 33,
-    "subdoc" : {
-        "salary" : 99999.3
-    },
-    "someArray" : [
-        {
-            "shinyLevel" : 84.12,
-            "crazy" : null
-        }
-    ],
-    "possibleGrad" : null,
-    "today" : 2019-09-01T14:48:36-05:00
+  "name": "abc",
+  "balance": {"$numberDouble": "99.90000000000001"},
+  "someId": {"$oid": "5d6c66e4a0dc75753703ff48"},
+  "someTrue": false,
+  "someNull": null,
+  "someInt": {"$numberLong": "33"},
+  "subdoc": {
+    "salary": {"$numberDouble": "99999.3"}
+  },
+  "someArray": [
+    {
+      "shinyLevel": {"$numberDouble": "84.12"},
+      "crazy": null
+    }
+  ],
+  "possibleGrad": null,
+  "today": {"$date": {"$numberLong": "1567367316000"}}
 }"""
 
   test "macro recursion limiting":

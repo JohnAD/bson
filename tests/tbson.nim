@@ -5,52 +5,72 @@ import times, oids, md5
 import bson
 
 let expected_bdoc = """{
-    "image" : {"$bindata": "MTIzMTJsM2prYWxrc2pzbGt2ZHNkYXM="},
-    "balance" : 1000.23,
-    "name" : "John",
-    "someId" : {"$oid": "5d6c66e4a0dc75753703ff48"},
-    "someTrue" : true,
-    "surname" : "Smith",
-    "someNull" : null,
-    "minkey" : {"$$minkey": 1},
-    "maxkey" : {"$$maxkey": 1},
-    "digest" : {"$md5": "d41d8cd98f00b204e9800998ecf8427e"},
-    "regexp-field" : {"$regex": "pattern", "$options": "ismx"},
-    "undefined" : undefined,
-    "someJS" : function identity(x) {return x;},
-    "someRef" : {"$ref": "col", "$id": "5d6c66e4a0dc75753703ff48", "$db": "db"},
-    "userDefined" : {"$bindata": "c29tZS1iaW5hcnktZGF0YQ=="},
-    "someTimestamp" : {"$timestamp": 4294967297},
-    "utcTime" : """ & $parseTime("2019-09-01T19:48:36", "yyyy-MM-dd\'T\'HH:mm:ss", utc()) & """,
-    "subdoc" : {
-        "salary" : 500
+  "image": {
+    "$binary": {
+      "base64": "MTIzMTJsM2prYWxrc2pzbGt2ZHNkYXM=",
+      "subtype": "00"
+    }
+  },
+  "balance": {"$numberDouble": "1000.23"},
+  "name": "John",
+  "someId": {"$oid": "5d6c66e4a0dc75753703ff48"},
+  "someTrue": true,
+  "surname": "Smith",
+  "someNull": null,
+  "minkey": {"$minKey" :1},
+  "maxkey": {"$maxKey" :1},
+  "digest": {
+    "$binary": {
+      "base64": "ZDQxZDhjZDk4ZjAwYjIwNGU5ODAwOTk4ZWNmODQyN2U=",
+      "subtype": "05"
+    }
+  },
+  "regexp-field": {"$regularExpression":
+    {
+      "pattern": "pattern",
+      "options": "ismx"
+    }
+  },
+  "undefined": {"$undefined": true},
+  "someJS": {"$code":"function identity(x) {return x;}"},
+  "someRef": {"$dbPointer":{"$ref":"db.col","$id":{"$oid":"48FF03377575DCA0E4666C5D"}}},
+  "userDefined": {
+    "$binary": {
+      "base64": "c29tZS1iaW5hcnktZGF0YQ==",
+      "subtype": "80"
+    }
+  },
+  "someTimestamp": {"$timestamp": {"t": 1,"i": 1}},
+  "utcTime": {"$date": {"$numberLong": "1567367316000"}},
+  "subdoc": {
+    "salary": {"$numberLong": "500"}
+  },
+  "array": [
+    {
+      "string": "hello"
     },
-    "array" : [
-        {
-            "string" : "hello"
-        },
-        {
-            "string" : "world"
-        }
-    ]
+    {
+      "string": "world"
+    }
+  ]
 }"""
 
 let expected_bdoc2 = """[
-    2,
-    2
+  {"$numberLong": "2"},
+  {"$numberLong": "2"}
 ]"""
 
 let expected_mdoc = """{
-    "name" : "Joe",
-    "age" : 42,
-    "siblings" : [
-        "Amy",
-        "Jerry"
-    ],
-    "schedule" : {
-        "8am" : "go to work",
-        "11am" : "see dentist"
-    }
+  "name": "Joe",
+  "age": {"$numberLong": "42"},
+  "siblings": [
+    "Amy",
+    "Jerry"
+  ],
+  "schedule": {
+    "8am": "go to work",
+    "11am": "see dentist"
+  }
 }"""
 
 suite "Basic BSON":
@@ -110,15 +130,15 @@ suite "Basic BSON":
 
   test "merge and update":
     const merge_expected_out = """{
-    "name" : "Joe",
-    "age" : 42,
-    "weight" : 52,
-    "feet" : 2
+  "name": "Joe",
+  "age": {"$numberLong": "42"},
+  "weight": {"$numberLong": "52"},
+  "feet": {"$numberLong": "2"}
 }"""
     const pull_expected_out = """{
-    "name" : "Joe",
-    "age" : 42,
-    "weight" : 52
+  "name": "Joe",
+  "age": {"$numberLong": "42"},
+  "weight": {"$numberLong": "52"}
 }"""
     var a = @@{"name": "Joe", "age": 42, "weight": 50 }
     let b = @@{"name": "Joe", "feet": 2, "weight": 52 }
