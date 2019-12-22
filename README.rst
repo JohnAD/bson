@@ -1,6 +1,6 @@
 Introduction to bson
 ==============================================================================
-ver 1.1.0
+ver 1.1.1
 
 .. image:: https://raw.githubusercontent.com/yglukhov/nimble-tag/master/nimble.png
    :height: 34

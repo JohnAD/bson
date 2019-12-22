@@ -179,6 +179,8 @@ import streams
 import strutils
 import times
 import tables
+import json
+import math
 
 
 type BsonKind* = char
@@ -857,11 +859,28 @@ proc toBson(x: NimNode): NimNode {.compileTime.} =
     result = newCall("toBson", x)
 
 
-proc toJsonStr*(b: Bson): string =
-  result = genExtendedJson(b, 0, 0, canonical=true)
+proc toJsonStr*(b: Bson, indent=0, tab=0, canonical=true): string =
+  ## Serialize the ``bs`` Bson object into an Extended JSON string.
+  ##
+  ## Specification found at: https://docs.mongodb.com/manual/reference/mongodb-extended-json/
+  ##
+  ## ``indent``: if set above zero, this many spaces will prefix each line of text.
+  ##
+  ## ``tab``: when set to zero, the string is highly compressed to one line; otherwise
+  ##      the string is multi-line and tabbed by this number of spaces of indentation
+  ##
+  ## ``cannonical``: if true, the explicit cannonical version is generated.
+  result = genExtendedJson(b, indent, tab, canonical)
 
 
 proc pretty*(b: Bson, tab=4, canonical=false): string =
+  ## Serialize the ``bs`` Bson object into human readable string.
+  ##
+  ## Specification found at: https://docs.mongodb.com/manual/reference/mongodb-extended-json/
+  ##
+  ## ``tab``: how many spaces of indentation. Defaults to four.
+  ##
+  ## ``cannonical``: if true, the explicit cannonical version is generated instead.
   result = genExtendedJson(b, 0, tab, canonical)
 
 
@@ -947,6 +966,14 @@ proc js*(code: string): Bson =
   ## Returns a new BSON object.
   return Bson(kind: BsonKindJSCode, valueCode: code)
 
+
+proc jsWScope*(code: string): Bson =
+  ## Create new Bson object representing JavaScript code with scope.
+  ##
+  ## Returns a new BSON object.
+  return Bson(kind: BsonKindJSCodeWithScope, valueCodeWS: code)
+
+
 proc bin*(bindata: string): Bson =
   ## Create new binary Bson object with ``generic`` subtype
   ##
@@ -958,6 +985,7 @@ proc bin*(bindata: string): Bson =
       subtype: BsonSubtypeGeneric,
       valueGeneric: bindata
   )
+
 
 proc binstr*(x: Bson): string =
   ## Generate a "binary string" equivalent of the BSON contents. This is really
@@ -981,6 +1009,7 @@ proc binstr*(x: Bson): string =
   else:
     raiseWrongNodeException(x)
 
+
 proc binuser*(bindata: string): Bson =
   ## Create new binary BSON object with "user-defined" subtype.
   ##
@@ -990,6 +1019,7 @@ proc binuser*(bindata: string): Bson =
       subtype: BsonSubtypeUserDefined,
       valueUserDefined: bindata
   )
+
 
 proc geo*(loc: GeoPoint): Bson =
   ## Convert array of two floats into Bson as a Geo-Point.
@@ -1067,8 +1097,6 @@ proc delete*(bs: Bson, idx: int) =  #!GROUP=del
     raiseWrongNodeException(bs)
 
 
-
-
 proc contains*(bs: Bson, key: string): bool =
   ## Check if Bson document has a specified field.
   ##
@@ -1078,6 +1106,10 @@ proc contains*(bs: Bson, key: string): bool =
     return key in bs.valueDocument
   else:
     return false
+
+
+proc hasKey*(bs: Bson, key: string): bool =  #!GROUP=contains
+  return contains(bs, key)
 
 
 proc readStr(s: Stream, length: int, result: var string) =
@@ -1501,38 +1533,17 @@ proc `{}=`*[T](bs: Bson, keys: varargs[string], value: T) =
 # ####################
 
 
-import json
-import parseutils
-import base64
-
 
 const
-  iso8601DateFormat = initTimeFormat("yyyy-MM-dd")
-  iso8601NaiveFormat = initTimeFormat("yyyy-MM-dd'T'HH:mm:ss")
   iso8601Format = initTimeFormat("yyyy-MM-dd'T'HH:mm:sszzz")
   iso8601MillisecondFormat = initTimeFormat("yyyy-MM-dd'T'HH:mm:ss'.'fffzzz")
-
-
-func fromMilliseconds(since1970: int64): Time =
-  initTime(since1970 div 1000, since1970 mod 1000 * 1000000)
 
 
 func toIso8601(dt: DateTime): string =
   dt.format(if dt.nanosecond div 1000000 mod 1000 != 0: iso8601MillisecondFormat else: iso8601Format)
 
 
-proc toIso8601(t: Time): string =
-  t.utc.toIso8601
-
-
-func isNaN*(x: float): bool {.importc: "isnan", header: "<math.h>".}
-
-
-func parseFloat64(s: string): float64 {.gcsafe, raises: [ValueError].} =
-  var parsedValue: BiggestFloat
-  if s.len == 0 or parseBiggestFloat(s, parsedValue, 0) != s.len:
-    raise newException(ValueError, "invalid float64: " & s)
-  result = parsedValue.float64
+func isNaN(x: float): bool {.importc: "isnan", header: "<math.h>".}
 
 
 proc toExtJsonString(t: Time): string =
@@ -1540,7 +1551,7 @@ proc toExtJsonString(t: Time): string =
   if 1970 <= dt.year and dt.year <= 9999:
     "\"$1\"".format(dt.toIso8601)
   else:
-    "{$$numberLong: \"$1\"}".format($t.toMilliseconds)
+    "{\"$$numberLong\": \"$1\"}".format($t.toMilliseconds)
 
 
 proc genExtendedJson(bson: Bson, indent: int, tab: int, canonical=true): string =
@@ -1737,3 +1748,111 @@ proc genExtendedJson(bson: Bson, indent: int, tab: int, canonical=true): string 
   else:
     assert false, bson.kind.uint8.toHex & ": unknown bson type"
 
+
+proc interpExtJsonObject(j: JsonNode, foundKeyword: string): Bson =
+  result = null()
+  try:
+    if foundKeyword == "$numberDouble":
+      let content = j[foundKeyword].str
+      var f = 0.0
+      if content == "NaN":
+        f = sqrt(-1.0)
+      elif content == "Infinity":
+        f = 0.3 / 0.0
+      elif content == "-Infinity":
+        f = -0.3 / 0.0
+      else:
+        f = parseFloat(content)
+      result = toBson(f)
+    elif foundKeyword == "$binary":
+      result = bin(decode(j[foundKeyword]["base64"].str))
+    elif foundKeyword == "$oid":
+      result = toBson(parseOid(j[foundKeyword].str))
+    elif foundKeyword == "$undefined":
+      result = undefined()
+    elif foundKeyword == "$date":
+      if j[foundKeyword].kind == JString:
+        var dt: Time
+        try:
+          dt = parseTime(j[foundKeyword].str, "yyyy-MM-dd'T'HH:mm:sszzz", utc())
+        except:
+          dt = parseTime(j[foundKeyword].str, "yyyy-MM-dd'T'HH:mm:ss'.'fffzzz", utc())
+        result = toBson(dt)
+      elif j[foundKeyword].kind == JObject:
+        let dt = fromMilliseconds(parseInt(j[foundKeyword]["$numberLong"].str))
+        result = toBson(dt)
+    elif foundKeyword == "$regularExpression":
+      let pattern = j[foundKeyword]["pattern"].str
+      let opts = j[foundKeyword]["options"].str
+      result = regex(pattern, opts)
+    elif foundKeyword == "$dbPointer":
+      let collection = j[foundKeyword]["$ref"].str
+      let refoid = parseOid(j[foundKeyword]["$id"]["$oid"].str)
+      result = dbref(collection, refoid)
+    elif foundKeyword == "$code":
+      let code = j[foundKeyword].str
+      if j.hasKey("$scope"):
+        result = jsWScope(code)
+      else:
+        result = js(code)
+    elif foundKeyword == "$numberInt":
+      result = toBson(parseInt(j[foundKeyword].str).int32)
+    elif foundKeyword == "$timestamp":
+      let bt = BsonTimestamp(
+        increment: j[foundKeyword]["i"].num.int32,
+        timestamp: j[foundKeyword]["t"].num.int32
+      )
+      result = Bson(kind: BsonKindTimestamp, valueTimestamp: bt)
+    elif foundKeyword == "$numberLong":
+      result = toBson(parseInt(j[foundKeyword].str))
+    elif foundKeyword == "$minKey":
+      result = minKey()
+    elif foundKeyword == "$maxKey":
+      result = maxKey()
+  except:
+    discard
+
+
+proc interpExtJsonRecurse(j: JsonNode): Bson =
+  case j.kind:
+  of JString:
+    result = toBson(j.str)
+  of JInt:
+    result = toBson(j.num)
+  of JFloat:
+    result = toBson(j.fnum)
+  of JBool:
+    result = toBson(j.bval)
+  of JNull:
+    result = null()
+  of JObject:
+    var extendedKeyword = ""
+    for key in j.keys():
+      if key.contains("$"):
+        extendedKeyword = key
+        break
+    if len(extendedKeyword) > 0:
+      result = interpExtJsonObject(j, extendedKeyword)
+    else:
+      result = newBsonDocument()
+      for key, value in j.pairs():
+        result[key] = interpExtJsonRecurse(value)
+  of JArray:
+    result = newBsonArray()
+    for item in j.items():
+      result.add interpExtJsonRecurse(item)
+
+
+proc interpretExtendedJson*(j: JsonNode): Bson =
+  ## Convert a JsonNode object (from the ``json`` Nim library) to a
+  ## Bson object.
+  ##
+  ## If an object in the JSON contains a key containing a dollar sign ($),
+  ## then an attempt is made to interpret that object into it's corresponding
+  ## BSON type per the v2 Json Extended spec.
+  ##
+  ## Details: https://docs.mongodb.com/manual/reference/mongodb-extended-json/
+  ##
+  ## If unable to interpret an extension keyword, then a null() is returned
+  ## for that node. BSON does NOT allow for keywords with a dollar ($) symbol in them.
+  result = interpExtJsonRecurse(j)

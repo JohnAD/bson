@@ -1,38 +1,39 @@
 import unittest
 
-import times, oids, options
+import times, oids
+import json
 
 import bson
-import bson/marshal
 
 let readyOid = parseOid("5d6c66e4a0dc75753703ff48")
 
+let doc = @@{
+    "name": "abc",
+    "balance": 1000.23,
+    "someId": readyOid,
+    "someTrue": true,
+    "someNull": null(),
+    "binthing": bin("kung foo"),
+    "subdoc": @@{
+        "salary": 500.0,
+        "zed": "Hello"
+    },
+    "strArray": ["hello", "world"],
+    "objArray": [
+        @@{"shinyLevel": 3.1415},
+        @@{"shinyLevel": 99},
+        @@{"shinyLevel": 0.0, "crazy": [14]}
+    ],
+    "possibleGrad": null(),
+    "today": parseTime("2019-09-01T19:48:36", "yyyy-MM-dd\'T\'HH:mm:ss", utc()),
+    "olderdate": parseTime("1019-09-01T19:48:36", "yyyy-MM-dd\'T\'HH:mm:ss", utc()),
+    "small": minkey(),
+    "big": maxkey(),
+    "search": regex("/*/*/", "gims")
+}
+
 suite "JSON Conversion":
   test "pretty JSON & stringify":
-    let doc = @@{
-        "name": "abc",
-        "balance": 1000.23,
-        "someId": readyOid,
-        "someTrue": true,
-        "someNull": null(),
-        "binthing": bin("kung foo"),
-        "subdoc": @@{
-            "salary": 500.0,
-            "zed": "Hello"
-        },
-        "strArray": ["hello", "world"],
-        "objArray": [
-            @@{"shinyLevel": 3.1415},
-            @@{"shinyLevel": 99},
-            @@{"shinyLevel": 0.0, "crazy": [14]}
-        ],
-        "possibleGrad": null(),
-        "today": parseTime("2019-09-01T19:48:36", "yyyy-MM-dd\'T\'HH:mm:ss", utc()),
-        "olderdate": parseTime("1019-09-01T19:48:36", "yyyy-MM-dd\'T\'HH:mm:ss", utc()),
-        "small": minkey(),
-        "big": maxkey(),
-        "search": regex("/*/*/", "gims")
-    }
 
     check doc.pretty == """{
     "name": "abc",
@@ -70,7 +71,7 @@ suite "JSON Conversion":
     ],
     "possibleGrad": null,
     "today": {"$date": "2019-09-01T19:48:36Z"},
-    "olderdate": {"$date": {$numberLong: "-29989627884000"}},
+    "olderdate": {"$date": {"$numberLong": "-29989627884000"}},
     "small": {"$minKey" :1},
     "big": {"$maxKey" :1},
     "search": {"$regularExpression":
@@ -174,3 +175,11 @@ suite "JSON Conversion":
     }
   }
 }"""
+
+  test "circle: BSON, toJsonStr()->string, parseJson()->JSON, interpretExtendedJson()->BSON, toJsonStr()->string":
+    let circleString = doc.toJsonStr(tab=4)
+    let circleJson = parseJson(circleString)
+    let circleBSON = interpretExtendedJson(circleJson)
+    let finalString = circleBSON.toJsonStr(tab=4)
+
+    check finalString == circleString
