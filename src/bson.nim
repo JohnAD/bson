@@ -445,13 +445,38 @@ proc toBson*(x: string): Bson =  #!GROUP=toBson
   # Convert string to Bson object
   return Bson(kind: BsonKindStringUTF8, valueString: x)
 
-converter toString*(x: Bson): string =
-  ## Convert Bson to UTF8 string
+
+proc toString*(x: Bson): string =
+  ## get UTF8 string from Bson Node
+  ##
+  ## Only works with UTF8 string, Regex, and JS Code BSON types.
   case x.kind
   of BsonKindStringUTF8:
-      return x.valueString
+    return x.valueString
+  of BsonKindRegexp:
+    return x.regex
+  of BsonKindJSCode:
+    return x.valueCode
+  of BsonKindJSCodeWithScope:
+    return x.valueCodeWS
   else:
-      return $x
+    raiseWrongNodeException(x)
+
+
+converter convertToString*(x: Bson): string =
+  ## auto-convert Bson to UTF8 string
+  case x.kind
+  of BsonKindStringUTF8:
+    return x.valueString
+  of BsonKindRegexp:
+    return x.regex
+  of BsonKindJSCode:
+    return x.valueCode
+  of BsonKindJSCodeWithScope:
+    return x.valueCodeWS
+  else:
+    return $x
+
 
 proc `[]=`*(bs: Bson, key: string, value: string) =  #!GROUP=`[]=`
   if bs.kind == BsonKindDocument:
