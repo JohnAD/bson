@@ -484,7 +484,7 @@ interpretExtendedJson
 
         proc interpretExtendedJson*(j: JsonNode): Bson =
 
-    source line: `1871 <../src/bson.nim#L1871>`__
+    source line: `1874 <../src/bson.nim#L1874>`__
 
     Convert a JsonNode object (from the ``json`` Nim library) to a
     Bson object.

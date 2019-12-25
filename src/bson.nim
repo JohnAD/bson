@@ -1801,7 +1801,10 @@ proc interpExtJsonObject(j: JsonNode, foundKeyword: string): Bson =
         try:
           dt = parseTime(j[foundKeyword].str, "yyyy-MM-dd'T'HH:mm:sszzz", utc())
         except:
-          dt = parseTime(j[foundKeyword].str, "yyyy-MM-dd'T'HH:mm:ss'.'fffzzz", utc())
+          try:
+            dt = parseTime(j[foundKeyword].str, "yyyy-MM-dd'T'HH:mm:ss'.'fffzzz", utc())
+          except:
+            dt = parseTime(j[foundKeyword].str, "yyyy-MM-dd'T'HH:mm:ss", utc())
         result = toBson(dt)
       elif j[foundKeyword].kind == JObject:
         let dt = fromMilliseconds(parseInt(j[foundKeyword]["$numberLong"].str))
@@ -1853,7 +1856,7 @@ proc interpExtJsonRecurse(j: JsonNode): Bson =
   of JObject:
     var extendedKeyword = ""
     for key in j.keys():
-      if key.contains("$"):
+      if key.startsWith("$"):
         extendedKeyword = key
         break
     if len(extendedKeyword) > 0:
